@@ -1,13 +1,16 @@
 
 import React, { useState, useCallback } from 'react';
-import { CheckCircle, AlertTriangle, XCircle, RotateCcw } from 'lucide-react';
+import { CheckCircle, AlertTriangle, XCircle, RotateCcw, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import FileUploader from './FileUploader';
 import ReconciliationSummary from './ReconciliationSummary';
 import TransactionTable from './TransactionTable';
-import { FileUploadState, ValidationError, ReconciliationResult, Transaction } from '@/types/reconciliation';
+import ThemeToggle from './ThemeToggle';
+import LoadingSpinner from './LoadingSpinner';
+import { FileUploadState, ValidationError, ReconciliationResult } from '@/types/reconciliation';
 import { parseCSV, validateFile } from '@/utils/csvParser';
 import { ReconciliationEngine } from '@/utils/reconciliationEngine';
 
@@ -39,8 +42,8 @@ const ReconciliationTool: React.FC = () => {
     setFiles(prev => ({ ...prev, [fileType]: file }));
     
     toast({
-      title: "File uploaded",
-      description: `${file.name} has been uploaded successfully.`,
+      title: "File uploaded successfully",
+      description: `${file.name} has been uploaded and validated.`,
     });
   }, [toast]);
   
@@ -93,7 +96,7 @@ const ReconciliationTool: React.FC = () => {
       setResults(reconciliationResults);
       
       toast({
-        title: "Reconciliation completed",
+        title: "Reconciliation completed successfully",
         description: `Processed ${reconciliationResults.summary.totalInternal} internal transactions. Found ${reconciliationResults.summary.matched} matches.`,
       });
       
@@ -123,138 +126,166 @@ const ReconciliationTool: React.FC = () => {
   const providerErrors = validationErrors.filter(e => e.file === 'provider');
   
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-8">
-      {/* Header */}
-      <div className="text-center">
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">Transaction Reconciliation Tool</h1>
-        <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-          Upload your internal system export and payment provider statement to automatically identify 
-          discrepancies and reconcile transactions.
-        </p>
-      </div>
-      
-      {/* File Upload Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <FileUploader
-          title="Internal System Export"
-          description="Upload your internal transaction export CSV file"
-          file={files.internal}
-          onFileSelect={(file) => handleFileSelect('internal', file)}
-          errors={internalErrors}
-          isProcessing={isProcessing}
-        />
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+      <div className="max-w-7xl mx-auto p-6 space-y-8">
+        {/* Header with Theme Toggle */}
+        <div className="flex justify-between items-start">
+          <div className="text-center flex-1">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent mb-4">
+              Transaction Reconciliation Tool
+            </h1>
+            <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
+              Upload your internal system export and payment provider statement to automatically identify 
+              discrepancies and reconcile transactions with advanced analytics.
+            </p>
+          </div>
+          <div className="flex items-center space-x-2">
+            <ThemeToggle />
+            <Button variant="outline" size="icon" className="h-9 w-9">
+              <Settings className="h-4 w-4" />
+              <span className="sr-only">Settings</span>
+            </Button>
+          </div>
+        </div>
         
-        <FileUploader
-          title="Payment Provider Statement"
-          description="Upload your payment provider statement CSV file"
-          file={files.provider}
-          onFileSelect={(file) => handleFileSelect('provider', file)}
-          errors={providerErrors}
-          isProcessing={isProcessing}
-        />
-      </div>
-      
-      {/* Action Buttons */}
-      <div className="flex justify-center space-x-4">
-        <Button
-          onClick={processReconciliation}
-          disabled={!files.internal || !files.provider || isProcessing || validationErrors.length > 0}
-          size="lg"
-          className="px-8"
-        >
-          {isProcessing ? (
-            <>
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-              Processing...
-            </>
-          ) : (
-            'Start Reconciliation'
-          )}
-        </Button>
+        {/* File Upload Section */}
+        <Card className="bg-gradient-to-r from-card to-card/50 shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-center text-2xl font-semibold">File Upload</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <FileUploader
+                title="Internal System Export"
+                description="Upload your internal transaction export CSV file"
+                file={files.internal}
+                onFileSelect={(file) => handleFileSelect('internal', file)}
+                errors={internalErrors}
+                isProcessing={isProcessing}
+              />
+              
+              <FileUploader
+                title="Payment Provider Statement"
+                description="Upload your payment provider statement CSV file"
+                file={files.provider}
+                onFileSelect={(file) => handleFileSelect('provider', file)}
+                errors={providerErrors}
+                isProcessing={isProcessing}
+              />
+            </div>
+          </CardContent>
+        </Card>
         
-        {(files.internal || files.provider || results) && (
+        {/* Action Buttons */}
+        <div className="flex justify-center space-x-4">
           <Button
-            onClick={resetTool}
-            variant="outline"
+            onClick={processReconciliation}
+            disabled={!files.internal || !files.provider || isProcessing || validationErrors.length > 0}
             size="lg"
-            className="px-8"
+            className="px-8 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg"
           >
-            Reset Tool
+            {isProcessing ? (
+              <>
+                <LoadingSpinner size="sm" className="mr-2" />
+                Processing Reconciliation...
+              </>
+            ) : (
+              'Start Reconciliation'
+            )}
           </Button>
+          
+          {(files.internal || files.provider || results) && (
+            <Button
+              onClick={resetTool}
+              variant="outline"
+              size="lg"
+              className="px-8 shadow-lg"
+            >
+              <RotateCcw className="h-4 w-4 mr-2" />
+              Reset Tool
+            </Button>
+          )}
+        </div>
+        
+        {/* Results Section */}
+        {results && (
+          <div className="space-y-8">
+            <ReconciliationSummary results={results} />
+            
+            <Card className="shadow-lg">
+              <CardHeader>
+                <CardTitle className="text-2xl font-semibold text-center">Transaction Details</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Tabs defaultValue="matched" className="w-full">
+                  <TabsList className="grid w-full grid-cols-4 bg-muted/50">
+                    <TabsTrigger value="matched" className="flex items-center space-x-2 data-[state=active]:bg-background">
+                      <CheckCircle className="h-4 w-4 text-green-600" />
+                      <span>Matched ({results.summary.matched})</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="internalOnly" className="flex items-center space-x-2 data-[state=active]:bg-background">
+                      <AlertTriangle className="h-4 w-4 text-amber-600" />
+                      <span>Internal Only ({results.summary.internalOnly})</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="providerOnly" className="flex items-center space-x-2 data-[state=active]:bg-background">
+                      <XCircle className="h-4 w-4 text-red-600" />
+                      <span>Provider Only ({results.summary.providerOnly})</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="mismatched" className="flex items-center space-x-2 data-[state=active]:bg-background">
+                      <RotateCcw className="h-4 w-4 text-blue-600" />
+                      <span>Mismatched ({results.summary.mismatched})</span>
+                    </TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="matched" className="mt-6">
+                    <TransactionTable
+                      title="Matched Transactions"
+                      transactions={results.categories.matched}
+                      type="matched"
+                      results={results}
+                      icon={<CheckCircle className="h-5 w-5 text-green-600" />}
+                      colorClass="text-green-600"
+                    />
+                  </TabsContent>
+                  
+                  <TabsContent value="internalOnly" className="mt-6">
+                    <TransactionTable
+                      title="Internal Only Transactions"
+                      transactions={results.categories.internalOnly}
+                      type="internalOnly"
+                      results={results}
+                      icon={<AlertTriangle className="h-5 w-5 text-amber-600" />}
+                      colorClass="text-amber-600"
+                    />
+                  </TabsContent>
+                  
+                  <TabsContent value="providerOnly" className="mt-6">
+                    <TransactionTable
+                      title="Provider Only Transactions"
+                      transactions={results.categories.providerOnly}
+                      type="providerOnly"
+                      results={results}
+                      icon={<XCircle className="h-5 w-5 text-red-600" />}
+                      colorClass="text-red-600"
+                    />
+                  </TabsContent>
+                  
+                  <TabsContent value="mismatched" className="mt-6">
+                    <TransactionTable
+                      title="Mismatched Transactions"
+                      transactions={results.categories.mismatched}
+                      type="mismatched"
+                      results={results}
+                      icon={<RotateCcw className="h-5 w-5 text-blue-600" />}
+                      colorClass="text-blue-600"
+                    />
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
+          </div>
         )}
       </div>
-      
-      {/* Results Section */}
-      {results && (
-        <div className="space-y-8">
-          <ReconciliationSummary results={results} />
-          
-          <Tabs defaultValue="matched" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="matched" className="flex items-center space-x-2">
-                <CheckCircle className="h-4 w-4" />
-                <span>Matched ({results.summary.matched})</span>
-              </TabsTrigger>
-              <TabsTrigger value="internalOnly" className="flex items-center space-x-2">
-                <AlertTriangle className="h-4 w-4" />
-                <span>Internal Only ({results.summary.internalOnly})</span>
-              </TabsTrigger>
-              <TabsTrigger value="providerOnly" className="flex items-center space-x-2">
-                <XCircle className="h-4 w-4" />
-                <span>Provider Only ({results.summary.providerOnly})</span>
-              </TabsTrigger>
-              <TabsTrigger value="mismatched" className="flex items-center space-x-2">
-                <RotateCcw className="h-4 w-4" />
-                <span>Mismatched ({results.summary.mismatched})</span>
-              </TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="matched" className="mt-6">
-              <TransactionTable
-                title="Matched Transactions"
-                transactions={results.categories.matched}
-                type="matched"
-                results={results}
-                icon={<CheckCircle className="h-5 w-5 text-green-600" />}
-                colorClass="text-green-600"
-              />
-            </TabsContent>
-            
-            <TabsContent value="internalOnly" className="mt-6">
-              <TransactionTable
-                title="Internal Only Transactions"
-                transactions={results.categories.internalOnly}
-                type="internalOnly"
-                results={results}
-                icon={<AlertTriangle className="h-5 w-5 text-amber-600" />}
-                colorClass="text-amber-600"
-              />
-            </TabsContent>
-            
-            <TabsContent value="providerOnly" className="mt-6">
-              <TransactionTable
-                title="Provider Only Transactions"
-                transactions={results.categories.providerOnly}
-                type="providerOnly"
-                results={results}
-                icon={<XCircle className="h-5 w-5 text-red-600" />}
-                colorClass="text-red-600"
-              />
-            </TabsContent>
-            
-            <TabsContent value="mismatched" className="mt-6">
-              <TransactionTable
-                title="Mismatched Transactions"
-                transactions={results.categories.mismatched}
-                type="mismatched"
-                results={results}
-                icon={<RotateCcw className="h-5 w-5 text-blue-600" />}
-                colorClass="text-blue-600"
-              />
-            </TabsContent>
-          </Tabs>
-        </div>
-      )}
     </div>
   );
 };
