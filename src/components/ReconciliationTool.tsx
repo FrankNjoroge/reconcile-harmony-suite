@@ -1,6 +1,5 @@
-
 import React, { useState, useCallback } from 'react';
-import { CheckCircle, AlertTriangle, XCircle, RotateCcw, Settings } from 'lucide-react';
+import { CheckCircle, AlertTriangle, XCircle, RotateCcw, Settings, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -126,34 +125,50 @@ const ReconciliationTool: React.FC = () => {
   const providerErrors = validationErrors.filter(e => e.file === 'provider');
   
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
-      <div className="max-w-7xl mx-auto p-6 space-y-8">
-        {/* Header with Theme Toggle */}
-        <div className="flex justify-between items-start">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 relative overflow-hidden">
+      {/* Background Pattern */}
+      <div className="absolute inset-0 bg-grid-pattern opacity-5 pointer-events-none" />
+      
+      <div className="max-w-7xl mx-auto p-6 space-y-8 relative z-10">
+        {/* Enhanced Header with Theme Toggle */}
+        <div className="flex justify-between items-start mb-8">
           <div className="text-center flex-1">
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent mb-4">
-              Transaction Reconciliation Tool
-            </h1>
-            <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-              Upload your internal system export and payment provider statement to automatically identify 
-              discrepancies and reconcile transactions with advanced analytics.
+            <div className="inline-flex items-center space-x-3 mb-4">
+              <div className="p-3 rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20">
+                <Sparkles className="h-8 w-8 text-primary" />
+              </div>
+              <h1 className="text-5xl font-bold bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
+                Reconciliation Suite
+              </h1>
+            </div>
+            <p className="text-lg text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+              Advanced transaction reconciliation with intelligent matching algorithms, 
+              real-time analytics, and comprehensive reporting capabilities.
             </p>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-3">
             <ThemeToggle />
-            <Button variant="outline" size="icon" className="h-9 w-9">
+            <Button 
+              variant="outline" 
+              size="icon" 
+              className="h-10 w-10 backdrop-blur-sm bg-background/50 border-border/50 hover:bg-background/80 hover:scale-105 transition-all duration-200"
+            >
               <Settings className="h-4 w-4" />
               <span className="sr-only">Settings</span>
             </Button>
           </div>
         </div>
         
-        {/* File Upload Section */}
-        <Card className="bg-gradient-to-r from-card to-card/50 shadow-lg">
-          <CardHeader>
-            <CardTitle className="text-center text-2xl font-semibold">File Upload</CardTitle>
+        {/* Enhanced File Upload Section */}
+        <Card className="bg-gradient-to-r from-card/80 to-card/60 backdrop-blur-sm border-border/50 shadow-2xl hover:shadow-3xl transition-all duration-500">
+          <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent">
+            <CardTitle className="text-center text-2xl font-semibold flex items-center justify-center space-x-2">
+              <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+              <span>File Upload Center</span>
+              <div className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" style={{ animationDelay: '0.5s' }} />
+            </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-8">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               <FileUploader
                 title="Internal System Export"
@@ -176,21 +191,25 @@ const ReconciliationTool: React.FC = () => {
           </CardContent>
         </Card>
         
-        {/* Action Buttons */}
-        <div className="flex justify-center space-x-4">
+        {/* Enhanced Action Buttons */}
+        <div className="flex justify-center space-x-6">
           <Button
             onClick={processReconciliation}
             disabled={!files.internal || !files.provider || isProcessing || validationErrors.length > 0}
             size="lg"
-            className="px-8 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg"
+            className="px-12 py-6 text-lg bg-gradient-to-r from-primary via-primary/90 to-primary/80 hover:from-primary/90 hover:via-primary/80 hover:to-primary/70 shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300 relative overflow-hidden group"
           >
+            <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             {isProcessing ? (
               <>
-                <LoadingSpinner size="sm" className="mr-2" />
-                Processing Reconciliation...
+                <LoadingSpinner size="sm" className="mr-3" />
+                <span className="relative z-10">Processing Reconciliation...</span>
               </>
             ) : (
-              'Start Reconciliation'
+              <span className="relative z-10 flex items-center">
+                <Sparkles className="h-5 w-5 mr-2" />
+                Start Reconciliation
+              </span>
             )}
           </Button>
           
@@ -199,39 +218,53 @@ const ReconciliationTool: React.FC = () => {
               onClick={resetTool}
               variant="outline"
               size="lg"
-              className="px-8 shadow-lg"
+              className="px-8 py-6 text-lg shadow-lg hover:shadow-xl backdrop-blur-sm bg-background/50 border-border/50 hover:bg-background/80 hover:scale-105 transition-all duration-300"
             >
-              <RotateCcw className="h-4 w-4 mr-2" />
+              <RotateCcw className="h-5 w-5 mr-2" />
               Reset Tool
             </Button>
           )}
         </div>
         
-        {/* Results Section */}
+        {/* Enhanced Results Section */}
         {results && (
           <div className="space-y-8">
             <ReconciliationSummary results={results} />
             
-            <Card className="shadow-lg">
-              <CardHeader>
-                <CardTitle className="text-2xl font-semibold text-center">Transaction Details</CardTitle>
+            <Card className="shadow-2xl backdrop-blur-sm bg-card/80 border-border/50">
+              <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent">
+                <CardTitle className="text-2xl font-semibold text-center bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                  Transaction Analysis Center
+                </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-6">
                 <Tabs defaultValue="matched" className="w-full">
-                  <TabsList className="grid w-full grid-cols-4 bg-muted/50">
-                    <TabsTrigger value="matched" className="flex items-center space-x-2 data-[state=active]:bg-background">
+                  <TabsList className="grid w-full grid-cols-4 bg-muted/30 backdrop-blur-sm rounded-xl p-2">
+                    <TabsTrigger 
+                      value="matched" 
+                      className="flex items-center space-x-2 data-[state=active]:bg-background data-[state=active]:shadow-lg transition-all duration-300 rounded-lg"
+                    >
                       <CheckCircle className="h-4 w-4 text-green-600" />
                       <span>Matched ({results.summary.matched})</span>
                     </TabsTrigger>
-                    <TabsTrigger value="internalOnly" className="flex items-center space-x-2 data-[state=active]:bg-background">
+                    <TabsTrigger 
+                      value="internalOnly" 
+                      className="flex items-center space-x-2 data-[state=active]:bg-background data-[state=active]:shadow-lg transition-all duration-300 rounded-lg"
+                    >
                       <AlertTriangle className="h-4 w-4 text-amber-600" />
                       <span>Internal Only ({results.summary.internalOnly})</span>
                     </TabsTrigger>
-                    <TabsTrigger value="providerOnly" className="flex items-center space-x-2 data-[state=active]:bg-background">
+                    <TabsTrigger 
+                      value="providerOnly" 
+                      className="flex items-center space-x-2 data-[state=active]:bg-background data-[state=active]:shadow-lg transition-all duration-300 rounded-lg"
+                    >
                       <XCircle className="h-4 w-4 text-red-600" />
                       <span>Provider Only ({results.summary.providerOnly})</span>
                     </TabsTrigger>
-                    <TabsTrigger value="mismatched" className="flex items-center space-x-2 data-[state=active]:bg-background">
+                    <TabsTrigger 
+                      value="mismatched" 
+                      className="flex items-center space-x-2 data-[state=active]:bg-background data-[state=active]:shadow-lg transition-all duration-300 rounded-lg"
+                    >
                       <RotateCcw className="h-4 w-4 text-blue-600" />
                       <span>Mismatched ({results.summary.mismatched})</span>
                     </TabsTrigger>
