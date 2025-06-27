@@ -9,10 +9,12 @@ interface ProcessingTimelineChartProps {
 }
 
 const ProcessingTimelineChart: React.FC<ProcessingTimelineChartProps> = ({ summary }) => {
-  // Generate mock timeline data based on reconciliation results
+  console.log('ProcessingTimelineChart received summary:', summary);
+  
+  // Generate timeline data based on reconciliation results
   const generateTimelineData = () => {
     const hours = Array.from({ length: 24 }, (_, i) => i);
-    const totalTransactions = summary.totalInternal;
+    const totalTransactions = summary.totalInternal || 0;
     
     return hours.map(hour => {
       const baseVolume = Math.sin((hour - 9) / 24 * Math.PI * 2) * 0.3 + 0.7;
@@ -29,6 +31,7 @@ const ProcessingTimelineChart: React.FC<ProcessingTimelineChartProps> = ({ summa
   };
 
   const data = generateTimelineData();
+  console.log('ProcessingTimelineChart data:', data);
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -46,6 +49,23 @@ const ProcessingTimelineChart: React.FC<ProcessingTimelineChartProps> = ({ summa
     }
     return null;
   };
+
+  // Show a message if no data
+  if (summary.totalInternal === 0) {
+    return (
+      <Card className="h-80">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg text-center">Processing Timeline (24h)</CardTitle>
+        </CardHeader>
+        <CardContent className="p-2 flex items-center justify-center">
+          <div className="text-center text-muted-foreground">
+            <p>No data to display</p>
+            <p className="text-sm">Upload files to see processing timeline</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="h-80">

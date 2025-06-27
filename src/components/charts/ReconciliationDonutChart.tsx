@@ -9,6 +9,8 @@ interface ReconciliationDonutChartProps {
 }
 
 const ReconciliationDonutChart: React.FC<ReconciliationDonutChartProps> = ({ summary }) => {
+  console.log('ReconciliationDonutChart received summary:', summary);
+  
   const data = [
     { name: 'Matched', value: summary.matched, color: '#10b981' },
     { name: 'Internal Only', value: summary.internalOnly, color: '#f59e0b' },
@@ -16,10 +18,13 @@ const ReconciliationDonutChart: React.FC<ReconciliationDonutChartProps> = ({ sum
     { name: 'Mismatched', value: summary.mismatched, color: '#3b82f6' }
   ].filter(item => item.value > 0);
 
+  console.log('ReconciliationDonutChart data after filtering:', data);
+
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0];
-      const percentage = ((data.value / summary.totalInternal) * 100).toFixed(1);
+      const total = summary.totalInternal || 1; // Avoid division by zero
+      const percentage = ((data.value / total) * 100).toFixed(1);
       return (
         <div className="bg-background border border-border rounded-lg p-3 shadow-lg">
           <p className="font-medium">{data.name}</p>
@@ -31,6 +36,23 @@ const ReconciliationDonutChart: React.FC<ReconciliationDonutChartProps> = ({ sum
     }
     return null;
   };
+
+  // Show a message if no data
+  if (data.length === 0) {
+    return (
+      <Card className="h-80">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg text-center">Transaction Breakdown</CardTitle>
+        </CardHeader>
+        <CardContent className="p-2 flex items-center justify-center">
+          <div className="text-center text-muted-foreground">
+            <p>No data to display</p>
+            <p className="text-sm">Upload files to see transaction breakdown</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="h-80">

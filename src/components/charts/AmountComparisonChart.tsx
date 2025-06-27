@@ -9,7 +9,9 @@ interface AmountComparisonChartProps {
 }
 
 const AmountComparisonChart: React.FC<AmountComparisonChartProps> = ({ summary }) => {
-  // Generate mock amount data based on transaction counts
+  console.log('AmountComparisonChart received summary:', summary);
+  
+  // Generate amount data based on transaction counts
   const data = [
     {
       category: 'Matched',
@@ -37,6 +39,8 @@ const AmountComparisonChart: React.FC<AmountComparisonChartProps> = ({ summary }
     }
   ].filter(item => item.count > 0);
 
+  console.log('AmountComparisonChart data after filtering:', data);
+
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
@@ -54,6 +58,23 @@ const AmountComparisonChart: React.FC<AmountComparisonChartProps> = ({ summary }
     }
     return null;
   };
+
+  // Show a message if no data
+  if (data.length === 0) {
+    return (
+      <Card className="h-80">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg text-center">Amount Comparison</CardTitle>
+        </CardHeader>
+        <CardContent className="p-2 flex items-center justify-center">
+          <div className="text-center text-muted-foreground">
+            <p>No data to display</p>
+            <p className="text-sm">Upload files to see amount comparison</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="h-80">

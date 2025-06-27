@@ -17,6 +17,9 @@ interface ReconciliationSummaryProps {
 const ReconciliationSummary: React.FC<ReconciliationSummaryProps> = ({ results }) => {
   const { summary } = results;
   
+  console.log('ReconciliationSummary received results:', results);
+  console.log('ReconciliationSummary summary:', summary);
+  
   const totalTransactions = summary.totalInternal + summary.totalProvider;
   const matchRate = totalTransactions > 0 ? ((summary.matched / summary.totalInternal) * 100) : 0;
   const discrepancyRate = totalTransactions > 0 ? (((summary.internalOnly + summary.providerOnly + summary.mismatched) / summary.totalInternal) * 100) : 0;
@@ -187,7 +190,7 @@ const ReconciliationSummary: React.FC<ReconciliationSummaryProps> = ({ results }
               borderColor={card.borderColor}
               gradient={card.gradient}
               details={card.details}
-              previousCount={undefined} // You can add historical data here
+              previousCount={undefined}
             />
           </div>
         ))}
