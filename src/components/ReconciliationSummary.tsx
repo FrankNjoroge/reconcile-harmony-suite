@@ -1,11 +1,14 @@
 
 import React from 'react';
-import { CheckCircle, AlertTriangle, XCircle, RotateCcw, TrendingUp, TrendingDown } from 'lucide-react';
+import { CheckCircle, AlertTriangle, XCircle, RotateCcw, TrendingUp, TrendingDown, BarChart3 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ReconciliationResult } from '@/types/reconciliation';
 import ExpandableSummaryCard from './ExpandableSummaryCard';
 import ProgressRing from './ProgressRing';
+import ReconciliationDonutChart from './charts/ReconciliationDonutChart';
+import AmountComparisonChart from './charts/AmountComparisonChart';
+import ProcessingTimelineChart from './charts/ProcessingTimelineChart';
 
 interface ReconciliationSummaryProps {
   results: ReconciliationResult;
@@ -148,6 +151,23 @@ const ReconciliationSummary: React.FC<ReconciliationSummaryProps> = ({ results }
           </Card>
         </div>
       </div>
+
+      {/* Data Visualization Section */}
+      <Card className="bg-gradient-to-r from-background/50 to-muted/20 backdrop-blur-sm border-border/50 shadow-xl">
+        <CardHeader>
+          <CardTitle className="text-xl font-semibold text-center bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent flex items-center justify-center space-x-2">
+            <BarChart3 className="h-5 w-5 text-primary" />
+            <span>Visual Analytics</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <ReconciliationDonutChart summary={summary} />
+            <AmountComparisonChart summary={summary} />
+            <ProcessingTimelineChart summary={summary} />
+          </div>
+        </CardContent>
+      </Card>
       
       {/* Enhanced Summary Cards with Expandable Details */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
