@@ -1,9 +1,9 @@
-
 import React, { useState } from 'react';
 import { Download, ChevronUp, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { EnhancedTable } from './EnhancedTable';
 import { Transaction, MismatchedTransaction, ReconciliationResult } from '@/types/reconciliation';
 import { exportReconciliationResults } from '@/utils/csvExporter';
 
@@ -108,128 +108,126 @@ const TransactionTable: React.FC<TransactionTableProps> = ({
         </div>
       </CardHeader>
       <CardContent>
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead 
-                  className="cursor-pointer hover:bg-gray-50 select-none"
-                  onClick={() => handleSort('transaction_reference')}
-                >
-                  <div className="flex items-center space-x-1">
-                    <span>Reference</span>
-                    <SortIcon field="transaction_reference" />
-                  </div>
-                </TableHead>
-                {type === 'mismatched' ? (
-                  <>
-                    <TableHead 
-                      className="cursor-pointer hover:bg-gray-50 select-none"
-                      onClick={() => handleSort('amount')}
-                    >
-                      <div className="flex items-center space-x-1">
-                        <span>Internal Amount</span>
-                        <SortIcon field="amount" />
+        <EnhancedTable stickyHeader swipeEnabled>
+          <TableHeader>
+            <TableRow>
+              <TableHead 
+                className="cursor-pointer hover:bg-gray-50 select-none"
+                onClick={() => handleSort('transaction_reference')}
+              >
+                <div className="flex items-center space-x-1">
+                  <span>Reference</span>
+                  <SortIcon field="transaction_reference" />
+                </div>
+              </TableHead>
+              {type === 'mismatched' ? (
+                <>
+                  <TableHead 
+                    className="cursor-pointer hover:bg-gray-50 select-none"
+                    onClick={() => handleSort('amount')}
+                  >
+                    <div className="flex items-center space-x-1">
+                      <span>Internal Amount</span>
+                      <SortIcon field="amount" />
+                    </div>
+                  </TableHead>
+                  <TableHead>Provider Amount</TableHead>
+                  <TableHead>Internal Status</TableHead>
+                  <TableHead>Provider Status</TableHead>
+                  <TableHead>Differences</TableHead>
+                </>
+              ) : (
+                <>
+                  <TableHead 
+                    className="cursor-pointer hover:bg-gray-50 select-none"
+                    onClick={() => handleSort('amount')}
+                  >
+                    <div className="flex items-center space-x-1">
+                      <span>Amount</span>
+                      <SortIcon field="amount" />
+                    </div>
+                  </TableHead>
+                  <TableHead 
+                    className="cursor-pointer hover:bg-gray-50 select-none"
+                    onClick={() => handleSort('status')}
+                  >
+                    <div className="flex items-center space-x-1">
+                      <span>Status</span>
+                      <SortIcon field="status" />
+                    </div>
+                  </TableHead>
+                  <TableHead>Timestamp</TableHead>
+                </>
+              )}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {displayTransactions.map((transaction, index) => {
+              if (type === 'mismatched') {
+                const mismatch = transaction as MismatchedTransaction;
+                return (
+                  <TableRow key={index} className="group">
+                    <TableCell className="font-medium">{mismatch.internal.transaction_reference}</TableCell>
+                    <TableCell className={mismatch.differences.amount ? 'bg-red-50 text-red-700' : ''}>
+                      ${mismatch.internal.amount.toFixed(2)}
+                    </TableCell>
+                    <TableCell className={mismatch.differences.amount ? 'bg-red-50 text-red-700' : ''}>
+                      ${mismatch.provider.amount.toFixed(2)}
+                    </TableCell>
+                    <TableCell className={mismatch.differences.status ? 'bg-red-50 text-red-700' : ''}>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        mismatch.internal.status === 'completed' ? 'bg-green-100 text-green-700' :
+                        mismatch.internal.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                        'bg-red-100 text-red-700'
+                      }`}>
+                        {mismatch.internal.status}
+                      </span>
+                    </TableCell>
+                    <TableCell className={mismatch.differences.status ? 'bg-red-50 text-red-700' : ''}>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        mismatch.provider.status === 'completed' ? 'bg-green-100 text-green-700' :
+                        mismatch.provider.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                        'bg-red-100 text-red-700'
+                      }`}>
+                        {mismatch.provider.status}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex space-x-1">
+                        {mismatch.differences.amount && (
+                          <span className="px-2 py-1 bg-red-100 text-red-700 rounded text-xs">Amount</span>
+                        )}
+                        {mismatch.differences.status && (
+                          <span className="px-2 py-1 bg-red-100 text-red-700 rounded text-xs">Status</span>
+                        )}
                       </div>
-                    </TableHead>
-                    <TableHead>Provider Amount</TableHead>
-                    <TableHead>Internal Status</TableHead>
-                    <TableHead>Provider Status</TableHead>
-                    <TableHead>Differences</TableHead>
-                  </>
-                ) : (
-                  <>
-                    <TableHead 
-                      className="cursor-pointer hover:bg-gray-50 select-none"
-                      onClick={() => handleSort('amount')}
-                    >
-                      <div className="flex items-center space-x-1">
-                        <span>Amount</span>
-                        <SortIcon field="amount" />
-                      </div>
-                    </TableHead>
-                    <TableHead 
-                      className="cursor-pointer hover:bg-gray-50 select-none"
-                      onClick={() => handleSort('status')}
-                    >
-                      <div className="flex items-center space-x-1">
-                        <span>Status</span>
-                        <SortIcon field="status" />
-                      </div>
-                    </TableHead>
-                    <TableHead>Timestamp</TableHead>
-                  </>
-                )}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {displayTransactions.map((transaction, index) => {
-                if (type === 'mismatched') {
-                  const mismatch = transaction as MismatchedTransaction;
-                  return (
-                    <TableRow key={index}>
-                      <TableCell className="font-medium">{mismatch.internal.transaction_reference}</TableCell>
-                      <TableCell className={mismatch.differences.amount ? 'bg-red-50 text-red-700' : ''}>
-                        ${mismatch.internal.amount.toFixed(2)}
-                      </TableCell>
-                      <TableCell className={mismatch.differences.amount ? 'bg-red-50 text-red-700' : ''}>
-                        ${mismatch.provider.amount.toFixed(2)}
-                      </TableCell>
-                      <TableCell className={mismatch.differences.status ? 'bg-red-50 text-red-700' : ''}>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          mismatch.internal.status === 'completed' ? 'bg-green-100 text-green-700' :
-                          mismatch.internal.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                          'bg-red-100 text-red-700'
-                        }`}>
-                          {mismatch.internal.status}
-                        </span>
-                      </TableCell>
-                      <TableCell className={mismatch.differences.status ? 'bg-red-50 text-red-700' : ''}>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          mismatch.provider.status === 'completed' ? 'bg-green-100 text-green-700' :
-                          mismatch.provider.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                          'bg-red-100 text-red-700'
-                        }`}>
-                          {mismatch.provider.status}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex space-x-1">
-                          {mismatch.differences.amount && (
-                            <span className="px-2 py-1 bg-red-100 text-red-700 rounded text-xs">Amount</span>
-                          )}
-                          {mismatch.differences.status && (
-                            <span className="px-2 py-1 bg-red-100 text-red-700 rounded text-xs">Status</span>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                } else {
-                  const tx = transaction as Transaction;
-                  return (
-                    <TableRow key={index}>
-                      <TableCell className="font-medium">{tx.transaction_reference}</TableCell>
-                      <TableCell>${tx.amount.toFixed(2)}</TableCell>
-                      <TableCell>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          tx.status === 'completed' ? 'bg-green-100 text-green-700' :
-                          tx.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                          'bg-red-100 text-red-700'
-                        }`}>
-                          {tx.status}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-gray-500">
-                        {tx.timestamp ? new Date(tx.timestamp).toLocaleDateString() : '-'}
-                      </TableCell>
-                    </TableRow>
-                  );
-                }
-              })}
-            </TableBody>
-          </Table>
-        </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              } else {
+                const tx = transaction as Transaction;
+                return (
+                  <TableRow key={index} className="group">
+                    <TableCell className="font-medium">{tx.transaction_reference}</TableCell>
+                    <TableCell>${tx.amount.toFixed(2)}</TableCell>
+                    <TableCell>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        tx.status === 'completed' ? 'bg-green-100 text-green-700' :
+                        tx.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                        'bg-red-100 text-red-700'
+                      }`}>
+                        {tx.status}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-gray-500">
+                      {tx.timestamp ? new Date(tx.timestamp).toLocaleDateString() : '-'}
+                    </TableCell>
+                  </TableRow>
+                );
+              }
+            })}
+          </TableBody>
+        </EnhancedTable>
         
         {transactions.length > 10 && (
           <div className="mt-4 text-center">
