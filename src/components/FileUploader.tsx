@@ -1,5 +1,5 @@
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useRef, useEffect } from 'react';
 import { Upload, FileText, AlertCircle, CheckCircle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { ValidationError } from '@/types/reconciliation';
@@ -21,6 +21,15 @@ const FileUploader: React.FC<FileUploaderProps> = ({
   errors,
   isProcessing
 }) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Clear input value when file is reset to null
+  useEffect(() => {
+    if (!file && fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  }, [file]);
+
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -40,8 +49,14 @@ const FileUploader: React.FC<FileUploaderProps> = ({
     const files = e.target.files;
     if (files && files.length > 0) {
       onFileSelect(files[0]);
+      // Clear the input value to allow selecting the same file again
+      e.target.value = '';
     }
   }, [onFileSelect]);
+
+  const handleClick = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
 
   const hasErrors = errors.length > 0;
   const isUploaded = file !== null;
@@ -53,7 +68,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
           className="text-center cursor-pointer"
           onDragOver={handleDragOver}
           onDrop={handleDrop}
-          onClick={() => document.getElementById(`file-input-${title}`)?.click()}
+          onClick={handleClick}
         >
           <div className="mb-4">
             {isUploaded && !hasErrors ? (
@@ -100,6 +115,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
         </div>
         
         <input
+          ref={fileInputRef}
           id={`file-input-${title}`}
           type="file"
           accept=".csv"
