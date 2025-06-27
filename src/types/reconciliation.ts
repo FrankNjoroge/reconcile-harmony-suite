@@ -17,15 +17,17 @@ export interface MismatchedTransaction {
   };
 }
 
+export interface ReconciliationSummary {
+  totalInternal: number;
+  totalProvider: number;
+  matched: number;
+  internalOnly: number;
+  providerOnly: number;
+  mismatched: number;
+}
+
 export interface ReconciliationResult {
-  summary: {
-    totalInternal: number;
-    totalProvider: number;
-    matched: number;
-    internalOnly: number;
-    providerOnly: number;
-    mismatched: number;
-  };
+  summary: ReconciliationSummary;
   categories: {
     matched: Transaction[];
     internalOnly: Transaction[];

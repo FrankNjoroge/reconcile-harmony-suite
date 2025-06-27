@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ReconciliationSummary } from '@/types/reconciliation';
 
@@ -78,7 +78,6 @@ const AmountComparisonChart: React.FC<AmountComparisonChartProps> = ({ summary }
             <Bar 
               dataKey="amount" 
               radius={[4, 4, 0, 0]}
-              fill={(entry) => entry.color}
             >
               {data.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={entry.color} />
