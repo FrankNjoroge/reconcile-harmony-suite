@@ -15,6 +15,7 @@ import { TableSkeleton, SummarySkeleton } from './LoadingSkeleton';
 import { FileUploadState, ValidationError, ReconciliationResult } from '@/types/reconciliation';
 import { parseCSV, validateFile } from '@/utils/csvParser';
 import { ReconciliationEngine } from '@/utils/reconciliationEngine';
+import { useReconciliation } from '@/contexts/ReconciliationContext';
 
 const ReconciliationTool: React.FC = () => {
   const [files, setFiles] = useState<FileUploadState>({ internal: null, provider: null });
@@ -23,6 +24,7 @@ const ReconciliationTool: React.FC = () => {
   const [results, setResults] = useState<ReconciliationResult | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { toast } = useToast();
+  const { setCurrentResults, addToActivityLog } = useReconciliation();
   
   const handleFileSelect = useCallback(async (fileType: 'internal' | 'provider', file: File) => {
     console.log(`File selected for ${fileType}:`, file.name);
@@ -101,6 +103,14 @@ const ReconciliationTool: React.FC = () => {
       console.log('Reconciliation completed:', reconciliationResults.summary);
       
       setResults(reconciliationResults);
+      setCurrentResults(reconciliationResults);
+      
+      // Add to activity log
+      addToActivityLog({
+        internalFileName: files.internal.name,
+        providerFileName: files.provider.name,
+        summary: reconciliationResults.summary
+      });
       
       toast({
         title: "Reconciliation completed successfully",
@@ -117,7 +127,7 @@ const ReconciliationTool: React.FC = () => {
     } finally {
       setIsProcessing(false);
     }
-  }, [files, toast]);
+  }, [files, toast, setCurrentResults, addToActivityLog]);
   
   const resetTool = useCallback(() => {
     setFiles({ internal: null, provider: null });

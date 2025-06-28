@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Download, ChevronUp, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -73,6 +74,22 @@ const TransactionTable: React.FC<TransactionTableProps> = ({
   const SortIcon = ({ field }: { field: string }) => {
     if (sortField !== field) return null;
     return sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />;
+  };
+
+  // Get background color based on transaction type
+  const getRowBackgroundColor = () => {
+    switch (type) {
+      case 'matched':
+        return 'bg-green-50 hover:bg-green-100';
+      case 'internalOnly':
+        return 'bg-yellow-50 hover:bg-yellow-100';
+      case 'providerOnly':
+        return 'bg-red-50 hover:bg-red-100';
+      case 'mismatched':
+        return 'bg-blue-50 hover:bg-blue-100';
+      default:
+        return 'hover:bg-muted/50';
+    }
   };
   
   if (transactions.length === 0) {
@@ -166,7 +183,7 @@ const TransactionTable: React.FC<TransactionTableProps> = ({
               if (type === 'mismatched') {
                 const mismatch = transaction as MismatchedTransaction;
                 return (
-                  <TableRow key={index} className="group">
+                  <TableRow key={index} className={`group ${getRowBackgroundColor()}`}>
                     <TableCell className="font-medium">{mismatch.internal.transaction_reference}</TableCell>
                     <TableCell className={mismatch.differences.amount ? 'bg-red-50 text-red-700' : ''}>
                       ${mismatch.internal.amount.toFixed(2)}
@@ -207,7 +224,7 @@ const TransactionTable: React.FC<TransactionTableProps> = ({
               } else {
                 const tx = transaction as Transaction;
                 return (
-                  <TableRow key={index} className="group">
+                  <TableRow key={index} className={`group ${getRowBackgroundColor()}`}>
                     <TableCell className="font-medium">{tx.transaction_reference}</TableCell>
                     <TableCell>${tx.amount.toFixed(2)}</TableCell>
                     <TableCell>
