@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Menu, Sparkles, Bell, User, Settings } from 'lucide-react';
+import { Menu, Sparkles, Bell, User, Settings, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
@@ -50,7 +50,16 @@ const AppHeader: React.FC<AppHeaderProps> = ({ onMenuToggle, isSidebarOpen }) =>
             className="text-primary font-medium hover:bg-primary/10 transition-colors"
             onClick={() => navigate('/')}
           >
-            Dashboard
+            <Home className="h-4 w-4 mr-2" />
+            Home
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={() => navigate('/insights')}
+            className="hover:bg-muted/50 transition-colors"
+          >
+            Insights
           </Button>
           <Button 
             variant="ghost" 
@@ -59,6 +68,14 @@ const AppHeader: React.FC<AppHeaderProps> = ({ onMenuToggle, isSidebarOpen }) =>
             className="hover:bg-muted/50 transition-colors"
           >
             Reports
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={() => navigate('/activity')}
+            className="hover:bg-muted/50 transition-colors"
+          >
+            Activity
           </Button>
         </nav>
 
@@ -74,7 +91,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ onMenuToggle, isSidebarOpen }) =>
             <span className="sr-only">Notifications</span>
           </Button>
           
-          <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" onClick={() => navigate('/settings')}>
             <Settings className="h-4 w-4" />
             <span className="sr-only">Settings</span>
           </Button>

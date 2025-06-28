@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { X, FileSpreadsheet, TrendingUp, Clock, BarChart3, Settings, HelpCircle } from 'lucide-react';
+import { X, FileSpreadsheet, TrendingUp, Clock, BarChart3, Settings, HelpCircle, Home } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -17,7 +17,7 @@ const AppSidebar: React.FC<AppSidebarProps> = ({ isOpen, onClose }) => {
   const { currentResults, activityLog } = useReconciliation();
   
   const menuItems = [
-    { icon: FileSpreadsheet, label: 'Dashboard', path: '/', badge: null },
+    { icon: Home, label: 'Home', path: '/', badge: null },
     { icon: TrendingUp, label: 'Insights', path: '/insights', badge: currentResults ? 'Ready' : null },
     { icon: BarChart3, label: 'Reports', path: '/reports', badge: currentResults ? 'Analytics' : null },
     { icon: Clock, label: 'Activity Log', path: '/activity', badge: activityLog.length > 0 ? activityLog.length.toString() : null },

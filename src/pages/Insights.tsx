@@ -1,20 +1,29 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp, BarChart3, PieChart, AlertCircle } from 'lucide-react';
+import { TrendingUp, BarChart3, PieChart, AlertCircle, Home } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
 import { useReconciliation } from '@/contexts/ReconciliationContext';
 import ReconciliationSummary from '@/components/ReconciliationSummary';
 
 const Insights: React.FC = () => {
   const { currentResults } = useReconciliation();
+  const navigate = useNavigate();
 
   if (!currentResults) {
     return (
       <div className="min-h-screen p-6 bg-gradient-to-br from-background via-background to-muted/20">
         <div className="max-w-4xl mx-auto">
-          <div className="flex items-center space-x-3 mb-8">
-            <TrendingUp className="h-8 w-8 text-primary" />
-            <h1 className="text-3xl font-bold">Reconciliation Insights</h1>
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center space-x-3">
+              <TrendingUp className="h-8 w-8 text-primary" />
+              <h1 className="text-3xl font-bold">Reconciliation Insights</h1>
+            </div>
+            <Button onClick={() => navigate('/')} variant="outline" className="flex items-center space-x-2">
+              <Home className="h-4 w-4" />
+              <span>Back to Home</span>
+            </Button>
           </div>
           
           <Card className="bg-muted/20">
@@ -38,9 +47,15 @@ const Insights: React.FC = () => {
   return (
     <div className="min-h-screen p-6 bg-gradient-to-br from-background via-background to-muted/20">
       <div className="max-w-6xl mx-auto space-y-8">
-        <div className="flex items-center space-x-3 mb-8">
-          <TrendingUp className="h-8 w-8 text-primary" />
-          <h1 className="text-3xl font-bold">Reconciliation Insights</h1>
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center space-x-3">
+            <TrendingUp className="h-8 w-8 text-primary" />
+            <h1 className="text-3xl font-bold">Reconciliation Insights</h1>
+          </div>
+          <Button onClick={() => navigate('/')} variant="outline" className="flex items-center space-x-2">
+            <Home className="h-4 w-4" />
+            <span>Back to Home</span>
+          </Button>
         </div>
 
         {/* Key Metrics */}
