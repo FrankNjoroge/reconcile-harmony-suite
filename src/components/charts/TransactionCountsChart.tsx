@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart3 } from 'lucide-react';
 import { ReconciliationSummary } from '@/types/reconciliation';
@@ -73,11 +73,10 @@ const TransactionCountsChart: React.FC<TransactionCountsChartProps> = ({ summary
               <Tooltip content={<CustomTooltip />} />
               <Bar 
                 dataKey="count" 
-                fill="#8884d8"
                 radius={[4, 4, 0, 0]}
               >
                 {data.map((entry, index) => (
-                  <Bar key={`bar-${index}`} fill={entry.color} />
+                  <Cell key={`cell-${index}`} fill={entry.color} />
                 ))}
               </Bar>
             </BarChart>
