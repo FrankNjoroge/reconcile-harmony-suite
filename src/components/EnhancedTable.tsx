@@ -117,7 +117,8 @@ const EnhancedTable: React.FC<EnhancedTableProps> = ({
         <Table>
           {React.Children.map(children, (child) => {
             if (React.isValidElement(child) && child.type === TableHeader) {
-              return React.cloneElement(child, {
+              return React.cloneElement(child as React.ReactElement<any>, {
+                ...child.props,
                 className: cn(
                   child.props.className,
                   stickyHeader && "sticky top-0 bg-background/95 backdrop-blur z-10 border-b-2"
@@ -125,10 +126,12 @@ const EnhancedTable: React.FC<EnhancedTableProps> = ({
               });
             }
             if (React.isValidElement(child) && child.type === TableBody) {
-              return React.cloneElement(child, {
+              return React.cloneElement(child as React.ReactElement<any>, {
+                ...child.props,
                 children: React.Children.map(child.props.children, (row, index) => {
                   if (React.isValidElement(row) && row.type === TableRow) {
-                    return React.cloneElement(row, {
+                    return React.cloneElement(row as React.ReactElement<any>, {
+                      ...row.props,
                       className: cn(
                         row.props.className,
                         "hover:bg-muted/50 transition-colors cursor-pointer",

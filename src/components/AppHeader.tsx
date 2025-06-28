@@ -47,12 +47,6 @@ const AppHeader: React.FC<AppHeaderProps> = ({ onMenuToggle, isSidebarOpen }) =>
           <Button variant="ghost" size="sm">
             Reports
           </Button>
-          <Button variant="ghost" size="sm">
-            History
-          </Button>
-          <Button variant="ghost" size="sm">
-            Analytics
-          </Button>
         </nav>
 
         {/* Right section - Actions */}

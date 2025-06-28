@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { X, FileSpreadsheet, BarChart3, History, Settings, HelpCircle } from 'lucide-react';
+import { X, FileSpreadsheet, TrendingUp, Clock, Settings, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -13,8 +13,8 @@ interface AppSidebarProps {
 const AppSidebar: React.FC<AppSidebarProps> = ({ isOpen, onClose }) => {
   const menuItems = [
     { icon: FileSpreadsheet, label: 'Reconciliation', active: true, badge: null },
-    { icon: BarChart3, label: 'Analytics', active: false, badge: 'New' },
-    { icon: History, label: 'History', active: false, badge: null },
+    { icon: TrendingUp, label: 'Insights', active: false, badge: 'New' },
+    { icon: Clock, label: 'Activity Log', active: false, badge: null },
     { icon: Settings, label: 'Settings', active: false, badge: null },
     { icon: HelpCircle, label: 'Help & Support', active: false, badge: null },
   ];
