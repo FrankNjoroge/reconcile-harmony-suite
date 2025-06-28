@@ -1,18 +1,26 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Clock, FileSpreadsheet, CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
+import { Clock, FileSpreadsheet, CheckCircle, AlertTriangle, XCircle, Home } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
 import { useReconciliation } from '@/contexts/ReconciliationContext';
 
 const ActivityLog: React.FC = () => {
   const { activityLog } = useReconciliation();
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen p-6 bg-gradient-to-br from-background via-background to-muted/20">
       <div className="max-w-4xl mx-auto">
-        <div className="flex items-center space-x-3 mb-8">
-          <Clock className="h-8 w-8 text-primary" />
-          <h1 className="text-3xl font-bold">Activity Log</h1>
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center space-x-3">
+            <Clock className="h-8 w-8 text-primary" />
+            <h1 className="text-3xl font-bold">Activity Log</h1>
+          </div>
+          <Button onClick={() => navigate('/')} variant="outline" className="flex items-center space-x-2">
+            <Home className="h-4 w-4" />
+            <span>Back to Home</span>
+          </Button>
         </div>
 
         {activityLog.length === 0 ? (

@@ -1,10 +1,11 @@
 
 import React from 'react';
-import { Menu, Sparkles, Bell, User, Settings, Home } from 'lucide-react';
+import { Menu, Sparkles, User, Settings, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
 import ThemeToggle from './ThemeToggle';
+import NotificationDropdown from './NotificationDropdown';
+import { useReconciliation } from '@/contexts/ReconciliationContext';
 
 interface AppHeaderProps {
   onMenuToggle: () => void;
@@ -13,6 +14,11 @@ interface AppHeaderProps {
 
 const AppHeader: React.FC<AppHeaderProps> = ({ onMenuToggle, isSidebarOpen }) => {
   const navigate = useNavigate();
+  const { hasUnviewedResults, markResultsAsViewed } = useReconciliation();
+
+  const handleNotificationClick = () => {
+    markResultsAsViewed();
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -79,17 +85,14 @@ const AppHeader: React.FC<AppHeaderProps> = ({ onMenuToggle, isSidebarOpen }) =>
           </Button>
         </nav>
 
-        {/* Right section - Actions */}
+        {/* Right section - Actions with new notification system */}
         <div className="flex items-center space-x-2">
           <ThemeToggle />
           
-          <Button variant="ghost" size="icon" className="relative">
-            <Bell className="h-4 w-4" />
-            <Badge className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 text-xs">
-              3
-            </Badge>
-            <span className="sr-only">Notifications</span>
-          </Button>
+          <NotificationDropdown 
+            hasNotification={hasUnviewedResults}
+            onNotificationClick={handleNotificationClick}
+          />
           
           <Button variant="ghost" size="icon" onClick={() => navigate('/settings')}>
             <Settings className="h-4 w-4" />

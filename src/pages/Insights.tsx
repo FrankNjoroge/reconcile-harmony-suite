@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TrendingUp, BarChart3, PieChart, AlertCircle, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -8,8 +7,15 @@ import { useReconciliation } from '@/contexts/ReconciliationContext';
 import ReconciliationSummary from '@/components/ReconciliationSummary';
 
 const Insights: React.FC = () => {
-  const { currentResults } = useReconciliation();
+  const { currentResults, markResultsAsViewed } = useReconciliation();
   const navigate = useNavigate();
+
+  // Mark results as viewed when component mounts
+  useEffect(() => {
+    if (currentResults) {
+      markResultsAsViewed();
+    }
+  }, [currentResults, markResultsAsViewed]);
 
   if (!currentResults) {
     return (

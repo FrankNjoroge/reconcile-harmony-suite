@@ -22,6 +22,8 @@ interface ReconciliationContextType {
   setCurrentResults: (results: ReconciliationResult | null) => void;
   activityLog: ActivityLogEntry[];
   addToActivityLog: (entry: Omit<ActivityLogEntry, 'id' | 'timestamp'>) => void;
+  hasUnviewedResults: boolean;
+  markResultsAsViewed: () => void;
 }
 
 const ReconciliationContext = createContext<ReconciliationContextType | undefined>(undefined);
@@ -37,6 +39,18 @@ export const useReconciliation = () => {
 export const ReconciliationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentResults, setCurrentResults] = useState<ReconciliationResult | null>(null);
   const [activityLog, setActivityLog] = useState<ActivityLogEntry[]>([]);
+  const [hasUnviewedResults, setHasUnviewedResults] = useState(false);
+
+  const handleSetCurrentResults = (results: ReconciliationResult | null) => {
+    setCurrentResults(results);
+    if (results) {
+      setHasUnviewedResults(true);
+    }
+  };
+
+  const markResultsAsViewed = () => {
+    setHasUnviewedResults(false);
+  };
 
   const addToActivityLog = (entry: Omit<ActivityLogEntry, 'id' | 'timestamp'>) => {
     const newEntry: ActivityLogEntry = {
@@ -51,9 +65,11 @@ export const ReconciliationProvider: React.FC<{ children: React.ReactNode }> = (
     <ReconciliationContext.Provider
       value={{
         currentResults,
-        setCurrentResults,
+        setCurrentResults: handleSetCurrentResults,
         activityLog,
         addToActivityLog,
+        hasUnviewedResults,
+        markResultsAsViewed,
       }}
     >
       {children}
