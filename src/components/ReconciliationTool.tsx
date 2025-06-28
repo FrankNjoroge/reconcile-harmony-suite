@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
 import FileUploader from './FileUploader';
 import ReconciliationSummary from './ReconciliationSummary';
 import TransactionTable from './TransactionTable';
@@ -24,6 +25,7 @@ const ReconciliationTool: React.FC = () => {
   const [results, setResults] = useState<ReconciliationResult | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
   const { setCurrentResults, addToActivityLog } = useReconciliation();
   
   const handleFileSelect = useCallback(async (fileType: 'internal' | 'provider', file: File) => {
@@ -114,8 +116,13 @@ const ReconciliationTool: React.FC = () => {
       
       toast({
         title: "Reconciliation completed successfully",
-        description: `Processed ${reconciliationResults.summary.totalInternal} internal transactions. Found ${reconciliationResults.summary.matched} matches.`,
+        description: `Processed ${reconciliationResults.summary.totalInternal} internal transactions. Redirecting to insights...`,
       });
+      
+      // Redirect to insights page after successful reconciliation
+      setTimeout(() => {
+        navigate('/insights');
+      }, 1500);
       
     } catch (error) {
       console.error('Error during reconciliation:', error);
@@ -127,7 +134,7 @@ const ReconciliationTool: React.FC = () => {
     } finally {
       setIsProcessing(false);
     }
-  }, [files, toast, setCurrentResults, addToActivityLog]);
+  }, [files, toast, setCurrentResults, addToActivityLog, navigate]);
   
   const resetTool = useCallback(() => {
     setFiles({ internal: null, provider: null });
@@ -156,7 +163,7 @@ const ReconciliationTool: React.FC = () => {
         />
         
         <main className="flex-1 p-6 space-y-8 min-h-screen">
-          {/* File Upload Section */}
+          {/* File Upload Section - Always visible on homepage */}
           <Card className="bg-gradient-to-r from-card/80 to-card/60 backdrop-blur-sm border-border/50 shadow-xl">
             <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent">
               <CardTitle className="text-center text-xl font-semibold flex items-center justify-center space-x-2">
@@ -223,22 +230,39 @@ const ReconciliationTool: React.FC = () => {
             )}
           </div>
           
-          {/* Results Section */}
+          {/* Processing State */}
           {isProcessing && (
-            <div className="space-y-6">
+            <div className="space-y-6 animate-fade-in">
+              <Card className="bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200">
+                <CardContent className="p-8 text-center">
+                  <LoadingSpinner size="lg" className="mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">Processing Reconciliation</h3>
+                  <p className="text-muted-foreground">
+                    Analyzing transactions and generating insights...
+                  </p>
+                </CardContent>
+              </Card>
               <SummarySkeleton />
               <TableSkeleton />
             </div>
           )}
           
+          {/* Results Section - Only show if not processing and not redirecting */}
           {results && !isProcessing && (
-            <div className="space-y-6">
+            <div className="space-y-6 animate-fade-in">
+              <div className="text-center p-4 bg-green-50 border border-green-200 rounded-lg">
+                <CheckCircle className="h-8 w-8 text-green-600 mx-auto mb-2" />
+                <p className="text-green-800 font-medium">
+                  Reconciliation completed! Redirecting to insights...
+                </p>
+              </div>
+              
               <ReconciliationSummary results={results} />
               
               <Card className="shadow-xl backdrop-blur-sm bg-card/80 border-border/50">
                 <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent">
                   <CardTitle className="text-xl font-semibold text-center bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-                    Transaction Analysis Center
+                    Transaction Analysis Preview
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-4 sm:p-6">

@@ -3,6 +3,7 @@ import React from 'react';
 import { Menu, Sparkles, Bell, User, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { useNavigate } from 'react-router-dom';
 import ThemeToggle from './ThemeToggle';
 
 interface AppHeaderProps {
@@ -11,6 +12,8 @@ interface AppHeaderProps {
 }
 
 const AppHeader: React.FC<AppHeaderProps> = ({ onMenuToggle, isSidebarOpen }) => {
+  const navigate = useNavigate();
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between px-4">
@@ -26,7 +29,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ onMenuToggle, isSidebarOpen }) =>
             <span className="sr-only">Toggle menu</span>
           </Button>
           
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-3 cursor-pointer" onClick={() => navigate('/')}>
             <div className="p-2 rounded-lg bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20">
               <Sparkles className="h-6 w-6 text-primary" />
             </div>
@@ -41,10 +44,20 @@ const AppHeader: React.FC<AppHeaderProps> = ({ onMenuToggle, isSidebarOpen }) =>
 
         {/* Center section - Navigation */}
         <nav className="hidden md:flex items-center space-x-6">
-          <Button variant="ghost" size="sm" className="text-primary font-medium">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="text-primary font-medium hover:bg-primary/10 transition-colors"
+            onClick={() => navigate('/')}
+          >
             Dashboard
           </Button>
-          <Button variant="ghost" size="sm">
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={() => navigate('/reports')}
+            className="hover:bg-muted/50 transition-colors"
+          >
             Reports
           </Button>
         </nav>

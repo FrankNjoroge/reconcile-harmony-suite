@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { X, FileSpreadsheet, TrendingUp, Clock, Settings, HelpCircle } from 'lucide-react';
+import { X, FileSpreadsheet, TrendingUp, Clock, BarChart3, Settings, HelpCircle } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -17,8 +17,9 @@ const AppSidebar: React.FC<AppSidebarProps> = ({ isOpen, onClose }) => {
   const { currentResults, activityLog } = useReconciliation();
   
   const menuItems = [
-    { icon: FileSpreadsheet, label: 'Reconciliation', path: '/', badge: null },
+    { icon: FileSpreadsheet, label: 'Dashboard', path: '/', badge: null },
     { icon: TrendingUp, label: 'Insights', path: '/insights', badge: currentResults ? 'Ready' : null },
+    { icon: BarChart3, label: 'Reports', path: '/reports', badge: currentResults ? 'Analytics' : null },
     { icon: Clock, label: 'Activity Log', path: '/activity', badge: activityLog.length > 0 ? activityLog.length.toString() : null },
     { icon: Settings, label: 'Settings', path: '/settings', badge: null },
     { icon: HelpCircle, label: 'Help & Support', path: '/help', badge: null },
@@ -69,17 +70,17 @@ const AppSidebar: React.FC<AppSidebarProps> = ({ isOpen, onClose }) => {
                 to={item.path}
                 onClick={() => onClose()}
                 className={({ isActive: navIsActive }) => `
-                  flex items-center space-x-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors
+                  flex items-center space-x-3 px-3 py-3 rounded-lg text-sm font-medium transition-all duration-200
                   ${navIsActive || isActive(item.path)
-                    ? 'bg-primary/10 text-primary border-primary/20 border' 
-                    : 'hover:bg-muted/50 text-muted-foreground hover:text-foreground'
+                    ? 'bg-primary/10 text-primary border-primary/20 border shadow-sm' 
+                    : 'hover:bg-muted/50 text-muted-foreground hover:text-foreground hover:shadow-sm'
                   }
                 `}
               >
                 <item.icon className="h-5 w-5 flex-shrink-0" />
                 <span className="flex-1">{item.label}</span>
                 {item.badge && (
-                  <Badge variant="secondary" className="ml-2 text-xs">
+                  <Badge variant="secondary" className="ml-2 text-xs animate-fade-in">
                     {item.badge}
                   </Badge>
                 )}
