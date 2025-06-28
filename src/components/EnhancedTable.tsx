@@ -117,23 +117,26 @@ const EnhancedTable: React.FC<EnhancedTableProps> = ({
         <Table>
           {React.Children.map(children, (child) => {
             if (React.isValidElement(child) && child.type === TableHeader) {
-              return React.cloneElement(child as React.ReactElement<any>, {
-                ...child.props,
+              const headerElement = child as React.ReactElement<React.ComponentProps<typeof TableHeader>>;
+              return React.cloneElement(headerElement, {
+                ...headerElement.props,
                 className: cn(
-                  child.props.className,
+                  headerElement.props.className,
                   stickyHeader && "sticky top-0 bg-background/95 backdrop-blur z-10 border-b-2"
                 )
               });
             }
             if (React.isValidElement(child) && child.type === TableBody) {
-              return React.cloneElement(child as React.ReactElement<any>, {
-                ...child.props,
-                children: React.Children.map(child.props.children, (row, index) => {
+              const bodyElement = child as React.ReactElement<React.ComponentProps<typeof TableBody>>;
+              return React.cloneElement(bodyElement, {
+                ...bodyElement.props,
+                children: React.Children.map(bodyElement.props.children, (row, index) => {
                   if (React.isValidElement(row) && row.type === TableRow) {
-                    return React.cloneElement(row as React.ReactElement<any>, {
-                      ...row.props,
+                    const rowElement = row as React.ReactElement<React.ComponentProps<typeof TableRow>>;
+                    return React.cloneElement(rowElement, {
+                      ...rowElement.props,
                       className: cn(
-                        row.props.className,
+                        rowElement.props.className,
                         "hover:bg-muted/50 transition-colors cursor-pointer",
                         "focus-within:bg-muted/70 focus-within:ring-2 focus-within:ring-primary/20"
                       )
