@@ -1,8 +1,8 @@
 
 import React from 'react';
-import { Menu, Zap, User, Settings, Home } from 'lucide-react';
+import { Menu, Zap, User, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import ThemeToggle from './ThemeToggle';
 import NotificationDropdown from './NotificationDropdown';
 import { useReconciliation } from '@/contexts/ReconciliationContext';
@@ -14,10 +14,30 @@ interface AppHeaderProps {
 
 const AppHeader: React.FC<AppHeaderProps> = ({ onMenuToggle, isSidebarOpen }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { hasUnviewedResults, markResultsAsViewed } = useReconciliation();
 
   const handleNotificationClick = () => {
     markResultsAsViewed();
+  };
+
+  const getPageTitle = () => {
+    switch (location.pathname) {
+      case '/':
+        return 'Home';
+      case '/insights':
+        return 'Insights';
+      case '/reports':
+        return 'Reports';
+      case '/activity':
+        return 'Activity Log';
+      case '/settings':
+        return 'Settings';
+      case '/help':
+        return 'Help & Support';
+      default:
+        return 'Transactron';
+    }
   };
 
   return (
@@ -48,44 +68,14 @@ const AppHeader: React.FC<AppHeaderProps> = ({ onMenuToggle, isSidebarOpen }) =>
           </div>
         </div>
 
-        {/* Center section - Navigation */}
-        <nav className="hidden md:flex items-center space-x-6">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="text-primary font-medium hover:bg-primary/10 transition-colors"
-            onClick={() => navigate('/')}
-          >
-            <Home className="h-4 w-4 mr-2" />
-            Home
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="sm"
-            onClick={() => navigate('/insights')}
-            className="hover:bg-muted/50 transition-colors"
-          >
-            Insights
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="sm"
-            onClick={() => navigate('/reports')}
-            className="hover:bg-muted/50 transition-colors"
-          >
-            Reports
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="sm"
-            onClick={() => navigate('/activity')}
-            className="hover:bg-muted/50 transition-colors"
-          >
-            Activity
-          </Button>
-        </nav>
+        {/* Center section - Current Page Title */}
+        <div className="hidden md:flex items-center">
+          <h2 className="text-lg font-semibold text-foreground">
+            {getPageTitle()}
+          </h2>
+        </div>
 
-        {/* Right section - Actions with new notification system */}
+        {/* Right section - User Actions */}
         <div className="flex items-center space-x-2">
           <ThemeToggle />
           

@@ -5,7 +5,7 @@ import { TrendingUp, CheckCircle, AlertTriangle, XCircle, Home } from 'lucide-re
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { useReconciliation } from '@/contexts/ReconciliationContext';
-import TransactionTable from '@/components/TransactionTable';
+import UnifiedInsightsTable from '@/components/UnifiedInsightsTable';
 
 const Insights: React.FC = () => {
   const { currentResults, markResultsAsViewed } = useReconciliation();
@@ -120,50 +120,8 @@ const Insights: React.FC = () => {
           </Card>
         </div>
 
-        {/* Reconciliation Categories */}
-        <div className="space-y-6">
-          {/* Matched Transactions */}
-          <TransactionTable
-            title="✅ Matched Transactions"
-            transactions={currentResults.categories.matched}
-            type="matched"
-            results={currentResults}
-            icon={<CheckCircle className="h-5 w-5 text-green-600" />}
-            colorClass="text-green-600"
-          />
-
-          {/* Internal Only Transactions */}
-          <TransactionTable
-            title="⚠️ Present only in Internal file"
-            transactions={currentResults.categories.internalOnly}
-            type="internalOnly"
-            results={currentResults}
-            icon={<AlertTriangle className="h-5 w-5 text-amber-600" />}
-            colorClass="text-amber-600"
-          />
-
-          {/* Provider Only Transactions */}
-          <TransactionTable
-            title="❌ Present only in Provider file"
-            transactions={currentResults.categories.providerOnly}
-            type="providerOnly"
-            results={currentResults}
-            icon={<XCircle className="h-5 w-5 text-red-600" />}
-            colorClass="text-red-600"
-          />
-
-          {/* Mismatched Transactions (if any) */}
-          {currentResults.categories.mismatched.length > 0 && (
-            <TransactionTable
-              title="🔄 Mismatched Transactions"
-              transactions={currentResults.categories.mismatched}
-              type="mismatched"
-              results={currentResults}
-              icon={<AlertTriangle className="h-5 w-5 text-blue-600" />}
-              colorClass="text-blue-600"
-            />
-          )}
-        </div>
+        {/* Unified Transaction Analysis Table */}
+        <UnifiedInsightsTable results={currentResults} />
 
         {/* Recommendations */}
         <Card>
