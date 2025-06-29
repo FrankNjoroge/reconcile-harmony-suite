@@ -2,9 +2,13 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { HelpCircle, MessageSquare, Book, ExternalLink } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { HelpCircle, MessageSquare, Book, ExternalLink, Home } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const HelpSupport: React.FC = () => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
 
   const faqs = [
@@ -58,54 +62,156 @@ const HelpSupport: React.FC = () => {
   return (
     <div className="min-h-screen p-6 bg-gradient-to-br from-background via-background to-muted/20">
       <div className="max-w-4xl mx-auto space-y-8">
-        <div className="flex items-center space-x-3 mb-8">
-          <HelpCircle className="h-8 w-8 text-primary" />
-          <h1 className="text-3xl font-bold">Help & Support</h1>
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center space-x-3">
+            <HelpCircle className="h-8 w-8 text-primary" />
+            <h1 className="text-3xl font-bold">Help & Support</h1>
+          </div>
+          <Button onClick={() => navigate('/')} variant="outline" className="flex items-center space-x-2">
+            <Home className="h-4 w-4" />
+            <span>Back to Home</span>
+          </Button>
         </div>
 
-        {/* Quick Help Cards */}
+        {/* Quick Help Cards - Now Interactive */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Book className="h-5 w-5 text-blue-600" />
-                <span>Getting Started</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Learn the basics of using the reconciliation tool and uploading your first files.
-              </p>
-            </CardContent>
-          </Card>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <Book className="h-5 w-5 text-blue-600" />
+                    <span>Getting Started</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">
+                    Learn the basics of using the reconciliation tool and uploading your first files.
+                  </p>
+                </CardContent>
+              </Card>
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle className="flex items-center space-x-2">
+                  <Book className="h-5 w-5 text-blue-600" />
+                  <span>Getting Started</span>
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="p-4 bg-blue-50 rounded-lg">
+                  <h4 className="font-medium text-blue-800 mb-2">1. Upload Your Files</h4>
+                  <p className="text-sm text-blue-700">
+                    Start by uploading both your internal system export and payment provider statement in CSV format
+                  </p>
+                </div>
+                <div className="p-4 bg-green-50 rounded-lg">
+                  <h4 className="font-medium text-green-800 mb-2">2. Review Results</h4>
+                  <p className="text-sm text-green-700">
+                    Check the reconciliation summary showing matched, internal-only, and provider-only transactions
+                  </p>
+                </div>
+                <div className="p-4 bg-purple-50 rounded-lg">
+                  <h4 className="font-medium text-purple-800 mb-2">3. Export Reports</h4>
+                  <p className="text-sm text-purple-700">
+                    Download detailed reports for each category to share with your team
+                  </p>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
 
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <MessageSquare className="h-5 w-5 text-green-600" />
-                <span>Common Issues</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Solutions to frequently encountered problems and error messages.
-              </p>
-            </CardContent>
-          </Card>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <MessageSquare className="h-5 w-5 text-green-600" />
+                    <span>Common Issues</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">
+                    Solutions to frequently encountered problems and error messages.
+                  </p>
+                </CardContent>
+              </Card>
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle className="flex items-center space-x-2">
+                  <MessageSquare className="h-5 w-5 text-green-600" />
+                  <span>Common Issues</span>
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="p-4 bg-red-50 rounded-lg">
+                  <h4 className="font-medium text-red-800 mb-2">File Format Problems</h4>
+                  <p className="text-sm text-red-700">
+                    Ensure CSV files have proper headers and transaction_reference column
+                  </p>
+                </div>
+                <div className="p-4 bg-yellow-50 rounded-lg">
+                  <h4 className="font-medium text-yellow-800 mb-2">Missing Transactions</h4>
+                  <p className="text-sm text-yellow-700">
+                    Check if transaction references match exactly between files
+                  </p>
+                </div>
+                <div className="p-4 bg-orange-50 rounded-lg">
+                  <h4 className="font-medium text-orange-800 mb-2">Amount Discrepancies</h4>
+                  <p className="text-sm text-orange-700">
+                    Verify currency formatting and decimal places are consistent
+                  </p>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
 
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <ExternalLink className="h-5 w-5 text-purple-600" />
-                <span>Best Practices</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Tips and recommendations for optimal reconciliation results.
-              </p>
-            </CardContent>
-          </Card>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <ExternalLink className="h-5 w-5 text-purple-600" />
+                    <span>Best Practices</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">
+                    Tips and recommendations for optimal reconciliation results.
+                  </p>
+                </CardContent>
+              </Card>
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle className="flex items-center space-x-2">
+                  <ExternalLink className="h-5 w-5 text-purple-600" />
+                  <span>Best Practices</span>
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="p-4 bg-blue-50 rounded-lg">
+                  <h4 className="font-medium text-blue-800 mb-2">Regular Reconciliation</h4>
+                  <p className="text-sm text-blue-700">
+                    Run reconciliation daily to catch discrepancies early
+                  </p>
+                </div>
+                <div className="p-4 bg-green-50 rounded-lg">
+                  <h4 className="font-medium text-green-800 mb-2">Data Validation</h4>
+                  <p className="text-sm text-green-700">
+                    Always verify file formats before uploading
+                  </p>
+                </div>
+                <div className="p-4 bg-purple-50 rounded-lg">
+                  <h4 className="font-medium text-purple-800 mb-2">Documentation</h4>
+                  <p className="text-sm text-purple-700">
+                    Keep exported reports for audit trails and team communication
+                  </p>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
 
         {/* FAQ Section */}

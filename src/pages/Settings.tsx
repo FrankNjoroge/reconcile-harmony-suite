@@ -1,13 +1,14 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Settings as SettingsIcon, Save, Download, Upload } from 'lucide-react';
+import { Settings as SettingsIcon, Save, Download, Upload, Home } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
 
 const Settings: React.FC = () => {
+  const navigate = useNavigate();
   const [settings, setSettings] = useState({
     autoExport: false,
     showAdvancedOptions: true,
@@ -64,9 +65,15 @@ const Settings: React.FC = () => {
   return (
     <div className="min-h-screen p-6 bg-gradient-to-br from-background via-background to-muted/20">
       <div className="max-w-4xl mx-auto space-y-8">
-        <div className="flex items-center space-x-3 mb-8">
-          <SettingsIcon className="h-8 w-8 text-primary" />
-          <h1 className="text-3xl font-bold">Settings</h1>
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center space-x-3">
+            <SettingsIcon className="h-8 w-8 text-primary" />
+            <h1 className="text-3xl font-bold">Settings</h1>
+          </div>
+          <Button onClick={() => navigate('/')} variant="outline" className="flex items-center space-x-2">
+            <Home className="h-4 w-4" />
+            <span>Back to Home</span>
+          </Button>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

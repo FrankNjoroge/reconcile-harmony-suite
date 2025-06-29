@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TrendingUp, BarChart3, PieChart, AlertCircle, Home } from 'lucide-react';
@@ -5,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { useReconciliation } from '@/contexts/ReconciliationContext';
 import ReconciliationSummary from '@/components/ReconciliationSummary';
+import TransactionCountsChart from '@/components/charts/TransactionCountsChart';
+import ReconciliationDistributionChart from '@/components/charts/ReconciliationDistributionChart';
 
 const Insights: React.FC = () => {
   const { currentResults, markResultsAsViewed } = useReconciliation();
@@ -117,6 +120,12 @@ const Insights: React.FC = () => {
               </p>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Visual Analytics Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <TransactionCountsChart summary={summary} />
+          <ReconciliationDistributionChart summary={summary} />
         </div>
 
         {/* Detailed Summary */}
