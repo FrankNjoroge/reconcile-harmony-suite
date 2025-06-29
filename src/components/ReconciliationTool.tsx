@@ -1,6 +1,6 @@
 
-import React, { useState, useCallback } from 'react';
-import { CheckCircle, AlertTriangle, XCircle, RotateCcw, Sparkles, Scale, AlertCircleIcon } from 'lucide-react';
+import React, { useState, useCallback, useEffect } from 'react';
+import { CheckCircle, AlertTriangle, XCircle, RotateCcw, Sparkles, AlertCircleIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,11 +13,13 @@ import TransactionTable from './TransactionTable';
 import LoadingSpinner from './LoadingSpinner';
 import AppHeader from './AppHeader';
 import AppSidebar from './AppSidebar';
+import ReconciliationHistory from './ReconciliationHistory';
 import { TableSkeleton, SummarySkeleton } from './LoadingSkeleton';
 import { FileUploadState, ValidationError, ReconciliationResult } from '@/types/reconciliation';
 import { parseCSV, validateFile, validateCSVStructure } from '@/utils/csvParser';
 import { ReconciliationEngine } from '@/utils/reconciliationEngine';
 import { useReconciliation } from '@/contexts/ReconciliationContext';
+import { saveReconciliationSession, getReconciliationHistory } from '@/utils/localStorage';
 
 const ReconciliationTool: React.FC = () => {
   const [files, setFiles] = useState<FileUploadState>({ internal: null, provider: null });
@@ -27,9 +29,16 @@ const ReconciliationTool: React.FC = () => {
   const [isValidating, setIsValidating] = useState(false);
   const [results, setResults] = useState<ReconciliationResult | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [historyData, setHistoryData] = useState<any[]>([]);
   const { toast } = useToast();
   const navigate = useNavigate();
   const { setCurrentResults, addToActivityLog } = useReconciliation();
+
+  // Load history data on component mount
+  useEffect(() => {
+    const history = getReconciliationHistory();
+    setHistoryData(history);
+  }, []);
   
   const handleFileSelect = useCallback(async (fileType: 'internal' | 'provider', file: File) => {
     console.log(`File selected for ${fileType}:`, file.name);
@@ -183,6 +192,17 @@ const ReconciliationTool: React.FC = () => {
       setResults(reconciliationResults);
       setCurrentResults(reconciliationResults);
       
+      // Save to localStorage
+      saveReconciliationSession(
+        files.internal.name,
+        files.provider.name,
+        reconciliationResults.summary
+      );
+      
+      // Update history display
+      const updatedHistory = getReconciliationHistory();
+      setHistoryData(updatedHistory);
+      
       // Add to activity log
       addToActivityLog({
         internalFileName: files.internal.name,
@@ -242,35 +262,34 @@ const ReconciliationTool: React.FC = () => {
           onClose={() => setIsSidebarOpen(false)}
         />
         
-        <main className="flex-1 p-6 space-y-8 min-h-screen">
-          {/* App Description Section */}
-          <div className="text-center max-w-4xl mx-auto space-y-4">
-            <div className="flex items-center justify-center space-x-2 mb-4">
-              <Scale className="h-8 w-8 text-primary" />
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-                Payment Reconciliation Tool
-              </h1>
-            </div>
-            <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-lg p-6 shadow-sm">
-              <p className="text-muted-foreground text-lg leading-relaxed">
-                Compare your payment records with your payment processor's statements to spot any differences. 
-                Simply upload both files and we'll show you which transactions match, which are missing, 
-                and highlight any discrepancies - making reconciliation quick and easy.
+        <main className="flex-1 p-4 md:p-6 space-y-6 min-h-screen">
+          {/* Shortened App Description Section */}
+          <div className="text-center max-w-4xl mx-auto">
+            <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-lg p-4 md:p-6 shadow-sm">
+              <p className="text-muted-foreground text-base md:text-lg leading-relaxed">
+                Upload your payment records and processor statements to quickly spot differences and missing transactions.
               </p>
             </div>
           </div>
 
+          {/* Recent Sessions History */}
+          {historyData.length > 0 && (
+            <div className="max-w-4xl mx-auto">
+              <ReconciliationHistory sessions={historyData} />
+            </div>
+          )}
+
           {/* File Upload Section */}
-          <Card className="bg-gradient-to-r from-card/80 to-card/60 backdrop-blur-sm border-border/50 shadow-xl">
+          <Card className="bg-gradient-to-r from-card/80 to-card/60 backdrop-blur-sm border-border/50 shadow-xl max-w-4xl mx-auto">
             <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent">
-              <CardTitle className="text-center text-xl font-semibold flex items-center justify-center space-x-2">
+              <CardTitle className="text-center text-lg md:text-xl font-semibold flex items-center justify-center space-x-2">
                 <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
                 <span>File Upload Center</span>
                 <div className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" style={{ animationDelay: '0.5s' }} />
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <CardContent className="p-4 md:p-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
                 <FileUploader
                   title="Internal System Export"
                   description="Upload your internal transaction export CSV file"
@@ -312,12 +331,12 @@ const ReconciliationTool: React.FC = () => {
           )}
           
           {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row justify-center items-center space-y-4 sm:space-y-0 sm:space-x-6">
+          <div className="flex flex-col sm:flex-row justify-center items-center space-y-4 sm:space-y-0 sm:space-x-6 max-w-4xl mx-auto">
             <Button
               onClick={processReconciliation}
               disabled={!canProcess || isProcessing}
               size="lg"
-              className="w-full sm:w-auto px-8 py-4 text-base bg-gradient-to-r from-primary via-primary/90 to-primary/80 hover:from-primary/90 hover:via-primary/80 hover:to-primary/70 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 relative overflow-hidden group disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+              className="w-full sm:w-auto px-6 md:px-8 py-3 md:py-4 text-sm md:text-base bg-gradient-to-r from-primary via-primary/90 to-primary/80 hover:from-primary/90 hover:via-primary/80 hover:to-primary/70 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 relative overflow-hidden group disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
             >
               <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               {isProcessing ? (
@@ -327,7 +346,7 @@ const ReconciliationTool: React.FC = () => {
                 </>
               ) : (
                 <span className="relative z-10 flex items-center">
-                  <Sparkles className="h-5 w-5 mr-2" />
+                  <Sparkles className="h-4 w-4 md:h-5 md:w-5 mr-2" />
                   Start Reconciliation
                 </span>
               )}
@@ -338,9 +357,9 @@ const ReconciliationTool: React.FC = () => {
                 onClick={resetTool}
                 variant="outline"
                 size="lg"
-                className="w-full sm:w-auto px-6 py-4 text-base shadow-md hover:shadow-lg backdrop-blur-sm bg-background/50 border-border/50 hover:bg-background/80 hover:scale-105 transition-all duration-300"
+                className="w-full sm:w-auto px-4 md:px-6 py-3 md:py-4 text-sm md:text-base shadow-md hover:shadow-lg backdrop-blur-sm bg-background/50 border-border/50 hover:bg-background/80 hover:scale-105 transition-all duration-300"
               >
-                <RotateCcw className="h-5 w-5 mr-2" />
+                <RotateCcw className="h-4 w-4 md:h-5 md:w-5 mr-2" />
                 Reset Workspace
               </Button>
             )}
@@ -348,9 +367,9 @@ const ReconciliationTool: React.FC = () => {
           
           {/* Processing State */}
           {isProcessing && (
-            <div className="space-y-6 animate-fade-in">
+            <div className="space-y-6 animate-fade-in max-w-6xl mx-auto">
               <Card className="bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200">
-                <CardContent className="p-8 text-center">
+                <CardContent className="p-6 md:p-8 text-center">
                   <LoadingSpinner size="lg" className="mx-auto mb-4" />
                   <h3 className="text-lg font-semibold mb-2">Processing Reconciliation</h3>
                   <p className="text-muted-foreground">
@@ -365,7 +384,7 @@ const ReconciliationTool: React.FC = () => {
           
           {/* Results Section - Only show if not processing and not redirecting */}
           {results && !isProcessing && (
-            <div className="space-y-6 animate-fade-in">
+            <div className="space-y-6 animate-fade-in max-w-6xl mx-auto">
               <div className="text-center p-4 bg-green-50 border border-green-200 rounded-lg">
                 <CheckCircle className="h-8 w-8 text-green-600 mx-auto mb-2" />
                 <p className="text-green-800 font-medium">
@@ -377,13 +396,13 @@ const ReconciliationTool: React.FC = () => {
               
               <Card className="shadow-xl backdrop-blur-sm bg-card/80 border-border/50">
                 <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent">
-                  <CardTitle className="text-xl font-semibold text-center bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                  <CardTitle className="text-lg md:text-xl font-semibold text-center bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
                     Transaction Analysis Preview
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="p-4 sm:p-6">
+                <CardContent className="p-2 sm:p-4 md:p-6">
                   <Tabs defaultValue="matched" className="w-full">
-                    <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 bg-muted/30 backdrop-blur-sm rounded-xl p-2 mb-6">
+                    <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 bg-muted/30 backdrop-blur-sm rounded-xl p-1 md:p-2 mb-4 md:mb-6">
                       <TabsTrigger 
                         value="matched" 
                         className="flex items-center space-x-1 data-[state=active]:bg-background data-[state=active]:shadow-lg transition-all duration-300 rounded-lg text-xs sm:text-sm"
@@ -422,7 +441,7 @@ const ReconciliationTool: React.FC = () => {
                       </TabsTrigger>
                     </TabsList>
                     
-                    <TabsContent value="matched" className="mt-6">
+                    <TabsContent value="matched" className="mt-4 md:mt-6">
                       <TransactionTable
                         title="Matched Transactions"
                         transactions={results.categories.matched}
@@ -433,7 +452,7 @@ const ReconciliationTool: React.FC = () => {
                       />
                     </TabsContent>
                     
-                    <TabsContent value="internalOnly" className="mt-6">
+                    <TabsContent value="internalOnly" className="mt-4 md:mt-6">
                       <TransactionTable
                         title="Internal Only Transactions"
                         transactions={results.categories.internalOnly}
@@ -444,7 +463,7 @@ const ReconciliationTool: React.FC = () => {
                       />
                     </TabsContent>
                     
-                    <TabsContent value="providerOnly" className="mt-6">
+                    <TabsContent value="providerOnly" className="mt-4 md:mt-6">
                       <TransactionTable
                         title="Provider Only Transactions"
                         transactions={results.categories.providerOnly}
@@ -455,7 +474,7 @@ const ReconciliationTool: React.FC = () => {
                       />
                     </TabsContent>
                     
-                    <TabsContent value="mismatched" className="mt-6">
+                    <TabsContent value="mismatched" className="mt-4 md:mt-6">
                       <TransactionTable
                         title="Mismatched Transactions"
                         transactions={results.categories.mismatched}

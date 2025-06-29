@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Menu, Sparkles, User, Settings, Home } from 'lucide-react';
+import { Menu, Zap, User, Settings, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import ThemeToggle from './ThemeToggle';
@@ -37,11 +37,11 @@ const AppHeader: React.FC<AppHeaderProps> = ({ onMenuToggle, isSidebarOpen }) =>
           
           <div className="flex items-center space-x-3 cursor-pointer" onClick={() => navigate('/')}>
             <div className="p-2 rounded-lg bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20">
-              <Sparkles className="h-6 w-6 text-primary" />
+              <Zap className="h-6 w-6 text-primary" />
             </div>
             <div className="hidden sm:block">
               <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-                Reconciliation Suite
+                Transactron
               </h1>
               <p className="text-xs text-muted-foreground">Professional Edition</p>
             </div>
