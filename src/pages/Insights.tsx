@@ -1,13 +1,11 @@
 
 import React, { useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp, BarChart3, PieChart, AlertCircle, Home } from 'lucide-react';
+import { TrendingUp, CheckCircle, AlertTriangle, XCircle, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { useReconciliation } from '@/contexts/ReconciliationContext';
-import ReconciliationSummary from '@/components/ReconciliationSummary';
-import TransactionCountsChart from '@/components/charts/TransactionCountsChart';
-import ReconciliationDistributionChart from '@/components/charts/ReconciliationDistributionChart';
+import TransactionTable from '@/components/TransactionTable';
 
 const Insights: React.FC = () => {
   const { currentResults, markResultsAsViewed } = useReconciliation();
@@ -37,7 +35,7 @@ const Insights: React.FC = () => {
           
           <Card className="bg-muted/20">
             <CardContent className="p-12 text-center">
-              <AlertCircle className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+              <TrendingUp className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-xl font-semibold mb-2">No Data Available</h3>
               <p className="text-muted-foreground">
                 Please complete a reconciliation process first to view insights and analytics.
@@ -67,12 +65,12 @@ const Insights: React.FC = () => {
           </Button>
         </div>
 
-        {/* Key Metrics */}
+        {/* Key Metrics Overview */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Match Rate</CardTitle>
-              <BarChart3 className="h-4 w-4 text-green-600" />
+              <CheckCircle className="h-4 w-4 text-green-600" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-green-600">{matchRate}%</div>
@@ -85,7 +83,7 @@ const Insights: React.FC = () => {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Error Rate</CardTitle>
-              <AlertCircle className="h-4 w-4 text-red-600" />
+              <XCircle className="h-4 w-4 text-red-600" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-red-600">{errorRate}%</div>
@@ -98,12 +96,12 @@ const Insights: React.FC = () => {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Internal Total</CardTitle>
-              <PieChart className="h-4 w-4 text-blue-600" />
+              <TrendingUp className="h-4 w-4 text-blue-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">${summary.totalInternal.toLocaleString()}</div>
+              <div className="text-2xl font-bold">{summary.totalInternal.toLocaleString()}</div>
               <p className="text-xs text-muted-foreground">
-                Total internal amount
+                Total internal transactions
               </p>
             </CardContent>
           </Card>
@@ -111,25 +109,61 @@ const Insights: React.FC = () => {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Provider Total</CardTitle>
-              <PieChart className="h-4 w-4 text-purple-600" />
+              <TrendingUp className="h-4 w-4 text-purple-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">${summary.totalProvider.toLocaleString()}</div>
+              <div className="text-2xl font-bold">{summary.totalProvider.toLocaleString()}</div>
               <p className="text-xs text-muted-foreground">
-                Total provider amount
+                Total provider transactions
               </p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Visual Analytics Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <TransactionCountsChart summary={summary} />
-          <ReconciliationDistributionChart summary={summary} />
-        </div>
+        {/* Reconciliation Categories */}
+        <div className="space-y-6">
+          {/* Matched Transactions */}
+          <TransactionTable
+            title="✅ Matched Transactions"
+            transactions={currentResults.categories.matched}
+            type="matched"
+            results={currentResults}
+            icon={<CheckCircle className="h-5 w-5 text-green-600" />}
+            colorClass="text-green-600"
+          />
 
-        {/* Detailed Summary */}
-        <ReconciliationSummary results={currentResults} />
+          {/* Internal Only Transactions */}
+          <TransactionTable
+            title="⚠️ Present only in Internal file"
+            transactions={currentResults.categories.internalOnly}
+            type="internalOnly"
+            results={currentResults}
+            icon={<AlertTriangle className="h-5 w-5 text-amber-600" />}
+            colorClass="text-amber-600"
+          />
+
+          {/* Provider Only Transactions */}
+          <TransactionTable
+            title="❌ Present only in Provider file"
+            transactions={currentResults.categories.providerOnly}
+            type="providerOnly"
+            results={currentResults}
+            icon={<XCircle className="h-5 w-5 text-red-600" />}
+            colorClass="text-red-600"
+          />
+
+          {/* Mismatched Transactions (if any) */}
+          {currentResults.categories.mismatched.length > 0 && (
+            <TransactionTable
+              title="🔄 Mismatched Transactions"
+              transactions={currentResults.categories.mismatched}
+              type="mismatched"
+              results={currentResults}
+              icon={<AlertTriangle className="h-5 w-5 text-blue-600" />}
+              colorClass="text-blue-600"
+            />
+          )}
+        </div>
 
         {/* Recommendations */}
         <Card>
@@ -172,6 +206,15 @@ const Insights: React.FC = () => {
                 <h4 className="font-medium text-green-800">Excellent Match Rate</h4>
                 <p className="text-sm text-green-700">
                   Your reconciliation shows a {matchRate}% match rate, indicating excellent data consistency.
+                </p>
+              </div>
+            )}
+
+            {summary.matched === 0 && summary.internalOnly === 0 && summary.providerOnly === 0 && summary.mismatched === 0 && (
+              <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                <h4 className="font-medium text-gray-800">No Issues Found</h4>
+                <p className="text-sm text-gray-700">
+                  All transactions have been successfully reconciled with no discrepancies detected.
                 </p>
               </div>
             )}
