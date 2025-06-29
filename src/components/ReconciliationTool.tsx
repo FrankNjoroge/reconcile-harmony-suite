@@ -1,9 +1,10 @@
 
 import React, { useState, useCallback } from 'react';
-import { CheckCircle, AlertTriangle, XCircle, RotateCcw, Sparkles } from 'lucide-react';
+import { CheckCircle, AlertTriangle, XCircle, RotateCcw, Sparkles, Scale, AlertCircleIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import FileUploader from './FileUploader';
@@ -14,14 +15,16 @@ import AppHeader from './AppHeader';
 import AppSidebar from './AppSidebar';
 import { TableSkeleton, SummarySkeleton } from './LoadingSkeleton';
 import { FileUploadState, ValidationError, ReconciliationResult } from '@/types/reconciliation';
-import { parseCSV, validateFile } from '@/utils/csvParser';
+import { parseCSV, validateFile, validateCSVStructure } from '@/utils/csvParser';
 import { ReconciliationEngine } from '@/utils/reconciliationEngine';
 import { useReconciliation } from '@/contexts/ReconciliationContext';
 
 const ReconciliationTool: React.FC = () => {
   const [files, setFiles] = useState<FileUploadState>({ internal: null, provider: null });
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
+  const [fileValidationErrors, setFileValidationErrors] = useState<string[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isValidating, setIsValidating] = useState(false);
   const [results, setResults] = useState<ReconciliationResult | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { toast } = useToast();
@@ -31,7 +34,11 @@ const ReconciliationTool: React.FC = () => {
   const handleFileSelect = useCallback(async (fileType: 'internal' | 'provider', file: File) => {
     console.log(`File selected for ${fileType}:`, file.name);
     
-    // Validate file
+    // Clear previous errors for this file type
+    setValidationErrors(prev => prev.filter(e => e.file !== fileType));
+    setFileValidationErrors([]);
+    
+    // Basic file validation
     const fileErrors = validateFile(file);
     if (fileErrors.length > 0) {
       const updatedErrors = fileErrors.map(error => ({ ...error, file: fileType }));
@@ -39,6 +46,8 @@ const ReconciliationTool: React.FC = () => {
         ...prev.filter(e => e.file !== fileType),
         ...updatedErrors
       ]);
+      
+      setFileValidationErrors([fileErrors[0].message]);
       
       toast({
         title: "File validation failed",
@@ -48,16 +57,46 @@ const ReconciliationTool: React.FC = () => {
       return;
     }
     
-    // Clear previous errors for this file type
-    setValidationErrors(prev => prev.filter(e => e.file !== fileType));
+    // Set validating state
+    setIsValidating(true);
     
-    // Update file state
-    setFiles(prev => ({ ...prev, [fileType]: file }));
-    
-    toast({
-      title: "File uploaded successfully",
-      description: `${file.name} has been uploaded and validated.`,
-    });
+    try {
+      // Validate CSV structure
+      const structureValidation = await validateCSVStructure(file);
+      
+      if (structureValidation.errors.length > 0) {
+        const errorMessages = structureValidation.errors.map(error => error.message);
+        setFileValidationErrors(errorMessages);
+        
+        toast({
+          title: "CSV validation failed",
+          description: `${file.name} has formatting issues. Please check the error messages below.`,
+          variant: "destructive"
+        });
+        setIsValidating(false);
+        return;
+      }
+      
+      // If validation passes, update file state
+      setFiles(prev => ({ ...prev, [fileType]: file }));
+      
+      toast({
+        title: "File uploaded successfully",
+        description: `${file.name} has been uploaded and validated.`,
+      });
+      
+    } catch (error) {
+      console.error('Error validating CSV structure:', error);
+      setFileValidationErrors(['An error occurred while validating the file. Please try again.']);
+      
+      toast({
+        title: "Validation error",
+        description: "An unexpected error occurred while validating the file.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsValidating(false);
+    }
   }, [toast]);
   
   const processReconciliation = useCallback(async () => {
@@ -65,6 +104,16 @@ const ReconciliationTool: React.FC = () => {
       toast({
         title: "Missing files",
         description: "Please upload both internal and provider CSV files.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Final validation check before processing
+    if (fileValidationErrors.length > 0) {
+      toast({
+        title: "Cannot process files",
+        description: "Please fix the validation errors before proceeding.",
         variant: "destructive"
       });
       return;
@@ -78,20 +127,47 @@ const ReconciliationTool: React.FC = () => {
       const internalResult = await parseCSV(files.internal);
       const providerResult = await parseCSV(files.provider);
       
-      // Update errors
+      // Check for parsing errors
       const allErrors = [
         ...internalResult.errors.map(e => ({ ...e, file: 'internal' as const })),
         ...providerResult.errors.map(e => ({ ...e, file: 'provider' as const }))
       ];
       
-      setValidationErrors(allErrors);
-      
       if (allErrors.length > 0) {
+        setValidationErrors(allErrors);
+        const errorMessages = allErrors.map(error => error.message);
+        setFileValidationErrors(errorMessages);
+        
         toast({
           title: "Processing errors detected",
-          description: `Found ${allErrors.length} error(s) during file processing. Results may be incomplete.`,
+          description: `Found ${allErrors.length} error(s) during file processing. Please fix these issues.`,
           variant: "destructive"
         });
+        setIsProcessing(false);
+        return;
+      }
+      
+      // Validate that we have actual data
+      if (internalResult.data.length === 0) {
+        setFileValidationErrors(['Internal file contains no valid transaction data. Please check your file format.']);
+        toast({
+          title: "No data found",
+          description: "Internal file contains no valid transactions.",
+          variant: "destructive"
+        });
+        setIsProcessing(false);
+        return;
+      }
+      
+      if (providerResult.data.length === 0) {
+        setFileValidationErrors(['Provider file contains no valid transaction data. Please check your file format.']);
+        toast({
+          title: "No data found",
+          description: "Provider file contains no valid transactions.",
+          variant: "destructive"
+        });
+        setIsProcessing(false);
+        return;
       }
       
       console.log(`Parsed ${internalResult.data.length} internal transactions and ${providerResult.data.length} provider transactions`);
@@ -126,6 +202,7 @@ const ReconciliationTool: React.FC = () => {
       
     } catch (error) {
       console.error('Error during reconciliation:', error);
+      setFileValidationErrors(['An unexpected error occurred while processing the files. Please try again.']);
       toast({
         title: "Processing failed",
         description: "An unexpected error occurred while processing the files. Please try again.",
@@ -134,11 +211,12 @@ const ReconciliationTool: React.FC = () => {
     } finally {
       setIsProcessing(false);
     }
-  }, [files, toast, setCurrentResults, addToActivityLog, navigate]);
+  }, [files, toast, setCurrentResults, addToActivityLog, navigate, fileValidationErrors]);
   
   const resetTool = useCallback(() => {
     setFiles({ internal: null, provider: null });
     setValidationErrors([]);
+    setFileValidationErrors([]);
     setResults(null);
     toast({
       title: "Workspace cleared",
@@ -148,6 +226,8 @@ const ReconciliationTool: React.FC = () => {
   
   const internalErrors = validationErrors.filter(e => e.file === 'internal');
   const providerErrors = validationErrors.filter(e => e.file === 'provider');
+  const hasValidationErrors = fileValidationErrors.length > 0;
+  const canProcess = files.internal && files.provider && !hasValidationErrors && !isValidating;
   
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
@@ -163,7 +243,24 @@ const ReconciliationTool: React.FC = () => {
         />
         
         <main className="flex-1 p-6 space-y-8 min-h-screen">
-          {/* File Upload Section - Always visible on homepage */}
+          {/* App Description Section */}
+          <div className="text-center max-w-4xl mx-auto space-y-4">
+            <div className="flex items-center justify-center space-x-2 mb-4">
+              <Scale className="h-8 w-8 text-primary" />
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                Payment Reconciliation Tool
+              </h1>
+            </div>
+            <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-lg p-6 shadow-sm">
+              <p className="text-muted-foreground text-lg leading-relaxed">
+                Compare your payment records with your payment processor's statements to spot any differences. 
+                Simply upload both files and we'll show you which transactions match, which are missing, 
+                and highlight any discrepancies - making reconciliation quick and easy.
+              </p>
+            </div>
+          </div>
+
+          {/* File Upload Section */}
           <Card className="bg-gradient-to-r from-card/80 to-card/60 backdrop-blur-sm border-border/50 shadow-xl">
             <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent">
               <CardTitle className="text-center text-xl font-semibold flex items-center justify-center space-x-2">
@@ -180,7 +277,7 @@ const ReconciliationTool: React.FC = () => {
                   file={files.internal}
                   onFileSelect={(file) => handleFileSelect('internal', file)}
                   errors={internalErrors}
-                  isProcessing={isProcessing}
+                  isProcessing={isValidating || isProcessing}
                 />
                 
                 <FileUploader
@@ -189,19 +286,38 @@ const ReconciliationTool: React.FC = () => {
                   file={files.provider}
                   onFileSelect={(file) => handleFileSelect('provider', file)}
                   errors={providerErrors}
-                  isProcessing={isProcessing}
+                  isProcessing={isValidating || isProcessing}
                 />
               </div>
             </CardContent>
           </Card>
+
+          {/* Error Messages Display */}
+          {hasValidationErrors && (
+            <div className="max-w-4xl mx-auto">
+              <Alert variant="destructive" className="bg-red-50 border-red-200">
+                <AlertCircleIcon className="h-4 w-4" />
+                <AlertDescription>
+                  <div className="space-y-2">
+                    <p className="font-medium">Please fix the following issues before proceeding:</p>
+                    <ul className="list-disc list-inside space-y-1">
+                      {fileValidationErrors.map((error, index) => (
+                        <li key={index} className="text-sm">{error}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </AlertDescription>
+              </Alert>
+            </div>
+          )}
           
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row justify-center items-center space-y-4 sm:space-y-0 sm:space-x-6">
             <Button
               onClick={processReconciliation}
-              disabled={!files.internal || !files.provider || isProcessing || validationErrors.length > 0}
+              disabled={!canProcess || isProcessing}
               size="lg"
-              className="w-full sm:w-auto px-8 py-4 text-base bg-gradient-to-r from-primary via-primary/90 to-primary/80 hover:from-primary/90 hover:via-primary/80 hover:to-primary/70 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 relative overflow-hidden group"
+              className="w-full sm:w-auto px-8 py-4 text-base bg-gradient-to-r from-primary via-primary/90 to-primary/80 hover:from-primary/90 hover:via-primary/80 hover:to-primary/70 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 relative overflow-hidden group disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
             >
               <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               {isProcessing ? (

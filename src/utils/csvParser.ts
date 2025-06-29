@@ -98,9 +98,76 @@ export const validateFile = (file: File): ValidationError[] => {
   if (!file.name.toLowerCase().endsWith('.csv')) {
     errors.push({
       file: 'internal',
-      message: 'File must be a CSV file'
+      message: 'Invalid file format. Please upload CSV files only.'
     });
   }
   
   return errors;
+};
+
+export const validateCSVStructure = (file: File): Promise<{ errors: ValidationError[] }> => {
+  return new Promise((resolve) => {
+    const errors: ValidationError[] = [];
+    
+    Papa.parse(file, {
+      header: true,
+      preview: 5, // Only parse first 5 rows for validation
+      skipEmptyLines: true,
+      complete: (results) => {
+        // Check if file has any data
+        if (!results.data || results.data.length === 0) {
+          errors.push({
+            file: 'internal',
+            message: 'File appears to be empty or contains no valid data.'
+          });
+          resolve({ errors });
+          return;
+        }
+        
+        // Check if required columns exist
+        const requiredFields = ['transaction_reference', 'amount', 'status'];
+        if (results.meta.fields) {
+          const missingFields = requiredFields.filter(field => 
+            !results.meta.fields!.includes(field)
+          );
+          
+          if (missingFields.length > 0) {
+            errors.push({
+              file: 'internal',
+              message: `Missing required column '${missingFields[0]}'. Please check your file format.`
+            });
+          }
+        } else {
+          errors.push({
+            file: 'internal',
+            message: 'Unable to read CSV headers. Please ensure the file is properly formatted.'
+          });
+        }
+        
+        // Validate that we have actual transaction data
+        let hasValidData = false;
+        results.data.forEach((row: any) => {
+          if (row.transaction_reference && row.transaction_reference.toString().trim() !== '') {
+            hasValidData = true;
+          }
+        });
+        
+        if (!hasValidData) {
+          errors.push({
+            file: 'internal',
+            message: 'No valid transaction references found in the file.'
+          });
+        }
+        
+        resolve({ errors });
+      },
+      error: (error) => {
+        errors.push({
+          file: 'internal',
+          message: 'Unable to process file. Please ensure it\'s a properly formatted CSV.'
+        });
+        resolve({ errors });
+      }
+    });
+  });
 };
