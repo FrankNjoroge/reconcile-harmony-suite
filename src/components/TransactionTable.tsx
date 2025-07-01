@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Download, ChevronUp, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -80,13 +79,13 @@ const TransactionTable: React.FC<TransactionTableProps> = ({
   const getRowBackgroundColor = () => {
     switch (type) {
       case 'matched':
-        return 'bg-green-50 hover:bg-green-100';
+        return 'table-row-matched';
       case 'internalOnly':
-        return 'bg-yellow-50 hover:bg-yellow-100';
+        return 'table-row-internal-only';
       case 'providerOnly':
-        return 'bg-red-50 hover:bg-red-100';
+        return 'table-row-provider-only';
       case 'mismatched':
-        return 'bg-blue-50 hover:bg-blue-100';
+        return 'table-row-mismatched';
       default:
         return 'hover:bg-muted/50';
     }
