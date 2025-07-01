@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Download, ChevronUp, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -184,13 +185,13 @@ const TransactionTable: React.FC<TransactionTableProps> = ({
                 return (
                   <TableRow key={index} className={`group ${getRowBackgroundColor()}`}>
                     <TableCell className="font-medium">{mismatch.internal.transaction_reference}</TableCell>
-                    <TableCell className={mismatch.differences.amount ? 'bg-red-50 text-red-700' : ''}>
+                    <TableCell>
                       ${mismatch.internal.amount.toFixed(2)}
                     </TableCell>
-                    <TableCell className={mismatch.differences.amount ? 'bg-red-50 text-red-700' : ''}>
+                    <TableCell>
                       ${mismatch.provider.amount.toFixed(2)}
                     </TableCell>
-                    <TableCell className={mismatch.differences.status ? 'bg-red-50 text-red-700' : ''}>
+                    <TableCell>
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                         mismatch.internal.status === 'completed' ? 'bg-green-100 text-green-700' :
                         mismatch.internal.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
@@ -199,7 +200,7 @@ const TransactionTable: React.FC<TransactionTableProps> = ({
                         {mismatch.internal.status}
                       </span>
                     </TableCell>
-                    <TableCell className={mismatch.differences.status ? 'bg-red-50 text-red-700' : ''}>
+                    <TableCell>
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                         mismatch.provider.status === 'completed' ? 'bg-green-100 text-green-700' :
                         mismatch.provider.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
