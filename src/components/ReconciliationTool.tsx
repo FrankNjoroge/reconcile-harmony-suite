@@ -182,7 +182,7 @@ const ReconciliationTool: React.FC = () => {
       console.log(`Parsed ${internalResult.data.length} internal transactions and ${providerResult.data.length} provider transactions`);
       
       // Perform reconciliation
-      const reconciliationResults = ReconciliationEngine.reconcile(
+      const reconciliationResults = await ReconciliationEngine.reconcile(
         internalResult.data,
         providerResult.data
       );

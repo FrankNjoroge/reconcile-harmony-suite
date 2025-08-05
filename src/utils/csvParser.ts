@@ -2,39 +2,52 @@
 import Papa from 'papaparse';
 import { Transaction, ValidationError } from '@/types/reconciliation';
 
-export const parseCSV = (file: File): Promise<{ data: Transaction[], errors: ValidationError[] }> => {
+// Optimized chunked CSV parsing to prevent memory overload
+export const parseCSVChunked = (
+  file: File, 
+  onProgress?: (progress: number) => void
+): Promise<{ data: Transaction[], errors: ValidationError[] }> => {
   return new Promise((resolve) => {
     const errors: ValidationError[] = [];
-    
+    const validTransactions: Transaction[] = [];
+    const requiredFields = ['transaction_reference', 'amount', 'status'];
+    const validStatuses = ['completed', 'pending', 'failed'];
+    let totalRows = 0;
+    let processedRows = 0;
+    let hasValidatedHeaders = false;
+
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
+      chunkSize: 1024 * 512, // 512KB chunks to prevent memory issues
       transform: (value, field) => {
-        // Trim whitespace from all fields
         return typeof value === 'string' ? value.trim() : value;
       },
-      complete: (results) => {
-        const requiredFields = ['transaction_reference', 'amount', 'status'];
-        const validStatuses = ['completed', 'pending', 'failed'];
-        
-        // Check if required columns exist
-        if (results.meta.fields) {
-          const missingFields = requiredFields.filter(field => 
-            !results.meta.fields!.includes(field)
-          );
-          
-          if (missingFields.length > 0) {
-            errors.push({
-              file: 'internal', // Will be updated by caller
-              message: `Missing required columns: ${missingFields.join(', ')}`
-            });
+      chunk: (results, parser) => {
+        // Validate headers on first chunk
+        if (!hasValidatedHeaders) {
+          if (results.meta.fields) {
+            const missingFields = requiredFields.filter(field => 
+              !results.meta.fields!.includes(field)
+            );
+            
+            if (missingFields.length > 0) {
+              errors.push({
+                file: 'internal',
+                message: `Missing required columns: ${missingFields.join(', ')}`
+              });
+              parser.abort();
+              resolve({ data: [], errors });
+              return;
+            }
           }
+          hasValidatedHeaders = true;
         }
-        
-        const validTransactions: Transaction[] = [];
-        
+
+        // Process chunk data
         results.data.forEach((row: any, index: number) => {
           const rowErrors: string[] = [];
+          const absoluteRowIndex = processedRows + index + 1;
           
           // Validate transaction_reference
           if (!row.transaction_reference || row.transaction_reference.toString().trim() === '') {
@@ -54,9 +67,9 @@ export const parseCSV = (file: File): Promise<{ data: Transaction[], errors: Val
           
           if (rowErrors.length > 0) {
             errors.push({
-              file: 'internal', // Will be updated by caller
-              message: `Row ${index + 2}: ${rowErrors.join(', ')}`,
-              row: index + 2
+              file: 'internal',
+              message: `Row ${absoluteRowIndex + 1}: ${rowErrors.join(', ')}`,
+              row: absoluteRowIndex + 1
             });
           } else {
             validTransactions.push({
@@ -69,7 +82,14 @@ export const parseCSV = (file: File): Promise<{ data: Transaction[], errors: Val
             });
           }
         });
+
+        processedRows += results.data.length;
         
+        // Estimate progress (parsing is ~30% of total processing)
+        const progress = Math.min((processedRows / Math.max(totalRows, processedRows)) * 30, 30);
+        onProgress?.(progress);
+      },
+      complete: () => {
         resolve({ data: validTransactions, errors });
       },
       error: (error) => {
@@ -81,6 +101,11 @@ export const parseCSV = (file: File): Promise<{ data: Transaction[], errors: Val
       }
     });
   });
+};
+
+// Legacy method for backward compatibility
+export const parseCSV = (file: File): Promise<{ data: Transaction[], errors: ValidationError[] }> => {
+  return parseCSVChunked(file);
 };
 
 export const validateFile = (file: File): ValidationError[] => {
