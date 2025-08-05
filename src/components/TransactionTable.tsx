@@ -1,12 +1,12 @@
 
 import React, { useState } from 'react';
-import { Download, ChevronUp, ChevronDown } from 'lucide-react';
+import { Download, ChevronUp, ChevronDown, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { EnhancedTable } from './EnhancedTable';
 import { Transaction, MismatchedTransaction, ReconciliationResult } from '@/types/reconciliation';
-import { exportReconciliationResults } from '@/utils/csvExporter';
+import { exportReconciliationResultsWithProgress, ExportProgress } from '@/utils/csvExporter';
 
 interface TransactionTableProps {
   title: string;
@@ -28,6 +28,11 @@ const TransactionTable: React.FC<TransactionTableProps> = ({
   const [sortField, setSortField] = useState<string>('transaction_reference');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [showAll, setShowAll] = useState(false);
+  const [exportState, setExportState] = useState<ExportProgress>({
+    loading: false,
+    progress: 0,
+    category: null
+  });
   
   const handleSort = (field: string) => {
     if (sortField === field) {
@@ -67,8 +72,18 @@ const TransactionTable: React.FC<TransactionTableProps> = ({
   
   const displayTransactions = showAll ? sortedTransactions : sortedTransactions.slice(0, 10);
   
-  const handleExport = () => {
-    exportReconciliationResults(results, type);
+  const handleExport = async () => {
+    try {
+      const onProgress = (progress: ExportProgress) => {
+        setExportState(progress);
+      };
+      
+      await exportReconciliationResultsWithProgress(results, type, onProgress);
+    } catch (error) {
+      console.error('Export failed:', error);
+      alert(`Export failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setExportState({ loading: false, progress: 0, category: null });
+    }
   };
   
   const SortIcon = ({ field }: { field: string }) => {
@@ -118,9 +133,23 @@ const TransactionTable: React.FC<TransactionTableProps> = ({
             <span>{title}</span>
             <span className="text-sm font-normal text-gray-500">({transactions.length} transactions)</span>
           </CardTitle>
-          <Button onClick={handleExport} size="sm" variant="outline">
-            <Download className="h-4 w-4 mr-2" />
-            Export CSV
+          <Button 
+            onClick={handleExport} 
+            size="sm" 
+            variant="outline"
+            disabled={exportState.loading}
+          >
+            {exportState.loading ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Exporting... {exportState.progress > 0 && `${exportState.progress}%`}
+              </>
+            ) : (
+              <>
+                <Download className="h-4 w-4 mr-2" />
+                Export CSV
+              </>
+            )}
           </Button>
         </div>
       </CardHeader>
