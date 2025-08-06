@@ -27,14 +27,30 @@ interface ReconciliationHistoryProps {
 const ReconciliationHistory: React.FC<ReconciliationHistoryProps> = ({ sessions }) => {
   const navigate = useNavigate();
 
-  const handleSessionClick = (sessionId: string) => {
-    navigate(`/insights?session=${sessionId}`);
+  const handleSessionClick = (session: HistorySession) => {
+    // Pass complete session data through navigation state
+    navigate('/insights', {
+      state: {
+        sessionId: session.id,
+        sessionData: session,
+        reconciliationResults: {
+          summary: session.summary,
+          categories: {
+            matched: [], // Historical sessions may not have full transaction details
+            internalOnly: [],
+            providerOnly: [],
+            mismatched: []
+          }
+        },
+        fromRecentSessions: true
+      }
+    });
   };
 
-  const handleKeyPress = (event: React.KeyboardEvent, sessionId: string) => {
+  const handleKeyPress = (event: React.KeyboardEvent, session: HistorySession) => {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
-      handleSessionClick(sessionId);
+      handleSessionClick(session);
     }
   };
 
@@ -55,8 +71,8 @@ const ReconciliationHistory: React.FC<ReconciliationHistoryProps> = ({ sessions 
           <div
             key={session.id}
             className="flex items-center justify-between p-3 bg-background/50 rounded-lg border border-border/30 hover:bg-background/80 hover:scale-[1.02] cursor-pointer transition-all duration-200 group focus-within:ring-2 focus-within:ring-primary/50 focus-within:outline-none"
-            onClick={() => handleSessionClick(session.id)}
-            onKeyPress={(e) => handleKeyPress(e, session.id)}
+            onClick={() => handleSessionClick(session)}
+            onKeyPress={(e) => handleKeyPress(e, session)}
             role="button"
             tabIndex={0}
             aria-label={`View insights for reconciliation between ${session.internalFileName} and ${session.providerFileName}`}

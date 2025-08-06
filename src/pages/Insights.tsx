@@ -1,24 +1,39 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TrendingUp, CheckCircle, AlertTriangle, XCircle, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useReconciliation } from '@/contexts/ReconciliationContext';
 import UnifiedInsightsTable from '@/components/UnifiedInsightsTable';
+import { ReconciliationResult } from '@/types/reconciliation';
 
 const Insights: React.FC = () => {
   const { currentResults, markResultsAsViewed } = useReconciliation();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [insightsData, setInsightsData] = useState<ReconciliationResult | null>(null);
 
-  // Mark results as viewed when component mounts
+  // Handle data from navigation state or context
   useEffect(() => {
-    if (currentResults) {
+    const navigationState = location.state as any;
+    
+    if (navigationState?.fromRecentSessions && navigationState?.reconciliationResults) {
+      // Data comes from Recent Sessions navigation
+      console.log('Loading insights from Recent Sessions:', navigationState);
+      setInsightsData(navigationState.reconciliationResults);
+    } else if (currentResults) {
+      // Data comes from current reconciliation context
+      console.log('Loading insights from current results');
+      setInsightsData(currentResults);
       markResultsAsViewed();
+    } else {
+      // No data available
+      setInsightsData(null);
     }
-  }, [currentResults, markResultsAsViewed]);
+  }, [currentResults, location.state, markResultsAsViewed]);
 
-  if (!currentResults) {
+  if (!insightsData) {
     return (
       <div className="min-h-screen p-6 bg-gradient-to-br from-background via-background to-muted/20">
         <div className="max-w-4xl mx-auto">
@@ -47,7 +62,7 @@ const Insights: React.FC = () => {
     );
   }
 
-  const { summary } = currentResults;
+  const { summary } = insightsData;
   const matchRate = ((summary.matched / summary.totalInternal) * 100).toFixed(1);
   const errorRate = (((summary.internalOnly + summary.providerOnly + summary.mismatched) / summary.totalInternal) * 100).toFixed(1);
 
@@ -121,7 +136,7 @@ const Insights: React.FC = () => {
         </div>
 
         {/* Unified Transaction Analysis Table */}
-        <UnifiedInsightsTable results={currentResults} />
+        <UnifiedInsightsTable results={insightsData} />
 
         {/* Recommendations */}
         <Card>
