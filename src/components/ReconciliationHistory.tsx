@@ -18,6 +18,13 @@ interface HistorySession {
     totalInternal: number;
     totalProvider: number;
   };
+  // Complete transaction data for insights
+  transactionData?: {
+    matched: any[];
+    internalOnly: any[];
+    providerOnly: any[];
+    mismatched: any[];
+  };
 }
 
 interface ReconciliationHistoryProps {
@@ -35,8 +42,8 @@ const ReconciliationHistory: React.FC<ReconciliationHistoryProps> = ({ sessions 
         sessionData: session,
         reconciliationResults: {
           summary: session.summary,
-          categories: {
-            matched: [], // Historical sessions may not have full transaction details
+          categories: session.transactionData || {
+            matched: [],
             internalOnly: [],
             providerOnly: [],
             mismatched: []

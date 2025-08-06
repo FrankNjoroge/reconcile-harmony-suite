@@ -12,6 +12,13 @@ interface HistorySession {
     totalInternal: number;
     totalProvider: number;
   };
+  // Complete transaction data for insights
+  transactionData?: {
+    matched: any[];
+    internalOnly: any[];
+    providerOnly: any[];
+    mismatched: any[];
+  };
 }
 
 const STORAGE_KEY = 'transactron_reconciliation_history';
@@ -27,6 +34,12 @@ export const saveReconciliationSession = (
     mismatched: number;
     totalInternal: number;
     totalProvider: number;
+  },
+  transactionData?: {
+    matched: any[];
+    internalOnly: any[];
+    providerOnly: any[];
+    mismatched: any[];
   }
 ): void => {
   try {
@@ -37,7 +50,8 @@ export const saveReconciliationSession = (
       timestamp: new Date().toISOString(),
       internalFileName,
       providerFileName,
-      summary
+      summary,
+      transactionData
     };
 
     const updatedSessions = [newSession, ...existingSessions].slice(0, MAX_SESSIONS);

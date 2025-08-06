@@ -192,11 +192,17 @@ const ReconciliationTool: React.FC = () => {
       setResults(reconciliationResults);
       setCurrentResults(reconciliationResults);
       
-      // Save to localStorage
+      // Save to localStorage with complete transaction data
       saveReconciliationSession(
         files.internal.name,
         files.provider.name,
-        reconciliationResults.summary
+        reconciliationResults.summary,
+        {
+          matched: reconciliationResults.categories.matched,
+          internalOnly: reconciliationResults.categories.internalOnly,
+          providerOnly: reconciliationResults.categories.providerOnly,
+          mismatched: reconciliationResults.categories.mismatched
+        }
       );
       
       // Update history display
