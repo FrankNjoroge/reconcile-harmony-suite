@@ -272,12 +272,6 @@ const ReconciliationTool: React.FC = () => {
             </div>
           </div>
 
-          {/* Recent Sessions History */}
-          {historyData.length > 0 && (
-            <div className="max-w-4xl mx-auto">
-              <ReconciliationHistory sessions={historyData} />
-            </div>
-          )}
 
           {/* File Upload Section */}
           <Card className="bg-gradient-to-r from-card/80 to-card/60 backdrop-blur-sm border-border/50 shadow-xl max-w-4xl mx-auto">
@@ -487,6 +481,13 @@ const ReconciliationTool: React.FC = () => {
                   </Tabs>
                 </CardContent>
               </Card>
+            </div>
+          )}
+
+          {/* Recent Sessions History - Moved to bottom */}
+          {historyData.length > 0 && (
+            <div className="max-w-4xl mx-auto">
+              <ReconciliationHistory sessions={historyData} />
             </div>
           )}
         </main>

@@ -1,6 +1,7 @@
 
 import React from 'react';
-import { Clock, FileText, CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
+import { Clock, FileText, CheckCircle, AlertTriangle, XCircle, ChevronRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -24,6 +25,19 @@ interface ReconciliationHistoryProps {
 }
 
 const ReconciliationHistory: React.FC<ReconciliationHistoryProps> = ({ sessions }) => {
+  const navigate = useNavigate();
+
+  const handleSessionClick = (sessionId: string) => {
+    navigate(`/insights?session=${sessionId}`);
+  };
+
+  const handleKeyPress = (event: React.KeyboardEvent, sessionId: string) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      handleSessionClick(sessionId);
+    }
+  };
+
   if (sessions.length === 0) {
     return null;
   }
@@ -40,7 +54,12 @@ const ReconciliationHistory: React.FC<ReconciliationHistoryProps> = ({ sessions 
         {sessions.slice(0, 5).map((session) => (
           <div
             key={session.id}
-            className="flex items-center justify-between p-3 bg-background/50 rounded-lg border border-border/30 hover:bg-background/80 transition-colors"
+            className="flex items-center justify-between p-3 bg-background/50 rounded-lg border border-border/30 hover:bg-background/80 hover:scale-[1.02] cursor-pointer transition-all duration-200 group focus-within:ring-2 focus-within:ring-primary/50 focus-within:outline-none"
+            onClick={() => handleSessionClick(session.id)}
+            onKeyPress={(e) => handleKeyPress(e, session.id)}
+            role="button"
+            tabIndex={0}
+            aria-label={`View insights for reconciliation between ${session.internalFileName} and ${session.providerFileName}`}
           >
             <div className="flex-1 min-w-0">
               <div className="flex items-center space-x-2 mb-1">
@@ -70,6 +89,7 @@ const ReconciliationHistory: React.FC<ReconciliationHistoryProps> = ({ sessions 
                   <span className="text-red-700 font-medium">{session.summary.providerOnly}</span>
                 </div>
               )}
+              <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground group-hover:translate-x-1 transition-all duration-200" />
             </div>
           </div>
         ))}
