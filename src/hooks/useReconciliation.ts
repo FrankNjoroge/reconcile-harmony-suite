@@ -1,7 +1,7 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { Transaction, ReconciliationResult, ValidationError } from '@/types/reconciliation';
-import { useWebWorkerCSVParser } from './useWebWorkerCSVParser';
-import { useWebWorkerReconciliation } from './useWebWorkerReconciliation';
+import { parseCSVChunked } from '@/utils/csvParser';
+import { ReconciliationEngine } from '@/utils/reconciliationEngine';
 
 interface ReconciliationProgress {
   stage: 'parsing' | 'reconciling' | 'complete';
@@ -16,7 +16,6 @@ interface UseReconciliationReturn {
   errors: ValidationError[];
   reconcileFiles: (internalFile: File, providerFile: File) => Promise<void>;
   clearResults: () => void;
-  cancelProcessing: () => void;
 }
 
 export const useReconciliation = (): UseReconciliationReturn => {
@@ -25,73 +24,22 @@ export const useReconciliation = (): UseReconciliationReturn => {
   const [result, setResult] = useState<ReconciliationResult | null>(null);
   const [errors, setErrors] = useState<ValidationError[]>([]);
 
-  // Web Worker hooks for parsing and reconciliation
-  const { parseCSVFile: parseInternalFile, cancelParsing: cancelInternalParsing } = useWebWorkerCSVParser(
-    (progress) => {
-      setProgress(prev => prev ? { ...prev, progress: progress * 0.25 } : null);
-    }
-  );
-
-  const { parseCSVFile: parseProviderFile, cancelParsing: cancelProviderParsing } = useWebWorkerCSVParser(
-    (progress) => {
-      setProgress(prev => prev ? { ...prev, progress: 25 + (progress * 0.25) } : null);
-    }
-  );
-
-  const { reconcileTransactions, cancelReconciliation } = useWebWorkerReconciliation(
-    (progress, message) => {
-      setProgress(prev => prev ? { 
-        ...prev, 
-        progress: 50 + (progress * 0.5),
-        message,
-        stage: 'reconciling' as const
-      } : null);
-    }
-  );
-
-  // Memory cleanup effect
-  useEffect(() => {
-    return () => {
-      // Clean up all workers on unmount
-      cancelInternalParsing();
-      cancelProviderParsing();
-      cancelReconciliation();
-      
-      // Clear large objects
-      setResult(null);
-      setErrors([]);
-      setProgress(null);
-    };
-  }, [cancelInternalParsing, cancelProviderParsing, cancelReconciliation]);
-
   const reconcileFiles = useCallback(async (internalFile: File, providerFile: File) => {
-    // Critical: Clear all previous data before starting new reconciliation
-    setResult(null);
-    setErrors([]);
-    setProgress(null);
-    
-    // Force garbage collection by clearing localStorage cache if it's too large
-    try {
-      const storageData = localStorage.getItem('reconciliation-sessions');
-      if (storageData && storageData.length > 5 * 1024 * 1024) { // 5MB limit
-        localStorage.removeItem('reconciliation-sessions');
-        console.log('Cleared localStorage cache to prevent memory overload');
-      }
-    } catch (error) {
-      console.warn('Could not check localStorage size:', error);
-    }
-    
     setIsProcessing(true);
+    setErrors([]);
+    setResult(null);
     
     try {
-      // Stage 1: Parse internal file with Web Worker
+      // Stage 1: Parse internal file
       setProgress({
         stage: 'parsing',
         progress: 0,
         message: 'Parsing internal transactions...'
       });
 
-      const internalResult = await parseInternalFile(internalFile);
+      const internalResult = await parseCSVChunked(internalFile, (progress) => {
+        setProgress(prev => prev ? { ...prev, progress } : null);
+      });
 
       if (internalResult.errors.length > 0) {
         const updatedErrors = internalResult.errors.map(error => ({
@@ -104,14 +52,16 @@ export const useReconciliation = (): UseReconciliationReturn => {
         return;
       }
 
-      // Stage 2: Parse provider file with Web Worker
+      // Stage 2: Parse provider file
       setProgress({
         stage: 'parsing',
-        progress: 25,
+        progress: 30,
         message: 'Parsing provider transactions...'
       });
 
-      const providerResult = await parseProviderFile(providerFile);
+      const providerResult = await parseCSVChunked(providerFile, (progress) => {
+        setProgress(prev => prev ? { ...prev, progress: 30 + (progress * 0.3) } : null);
+      });
 
       if (providerResult.errors.length > 0) {
         const updatedErrors = providerResult.errors.map(error => ({
@@ -124,16 +74,22 @@ export const useReconciliation = (): UseReconciliationReturn => {
         return;
       }
 
-      // Stage 3: Reconcile transactions with Web Worker
+      // Stage 3: Reconcile transactions
       setProgress({
         stage: 'reconciling',
-        progress: 50,
-        message: 'Starting reconciliation...'
+        progress: 60,
+        message: 'Reconciling transactions...'
       });
 
-      const reconciliationResult = await reconcileTransactions(
+      const reconciliationResult = await ReconciliationEngine.reconcileWithProgress(
         internalResult.data,
-        providerResult.data
+        providerResult.data,
+        (progress) => {
+          setProgress(prev => prev ? { 
+            ...prev, 
+            progress: 60 + (progress * 0.4) // 40% of remaining progress
+          } : null);
+        }
       );
 
       setResult(reconciliationResult);
@@ -143,14 +99,9 @@ export const useReconciliation = (): UseReconciliationReturn => {
         message: 'Reconciliation complete!'
       });
 
-      // Clear progress after 2 seconds and force memory cleanup
+      // Clear progress after 2 seconds
       setTimeout(() => {
         setProgress(null);
-        
-        // Critical: Force memory cleanup
-        if ((window as any).gc) {
-          (window as any).gc();
-        }
       }, 2000);
 
     } catch (error) {
@@ -161,27 +112,13 @@ export const useReconciliation = (): UseReconciliationReturn => {
     } finally {
       setIsProcessing(false);
     }
-  }, [parseInternalFile, parseProviderFile, reconcileTransactions]);
+  }, []);
 
   const clearResults = useCallback(() => {
-    // Critical: Aggressive memory cleanup
     setResult(null);
     setErrors([]);
     setProgress(null);
-    
-    // Force garbage collection if available
-    if ((window as any).gc) {
-      (window as any).gc();
-    }
   }, []);
-
-  const cancelProcessing = useCallback(() => {
-    cancelInternalParsing();
-    cancelProviderParsing();
-    cancelReconciliation();
-    setIsProcessing(false);
-    setProgress(null);
-  }, [cancelInternalParsing, cancelProviderParsing, cancelReconciliation]);
 
   return {
     isProcessing,
@@ -189,7 +126,6 @@ export const useReconciliation = (): UseReconciliationReturn => {
     result,
     errors,
     reconcileFiles,
-    clearResults,
-    cancelProcessing
+    clearResults
   };
 };
