@@ -221,9 +221,17 @@ const ReconciliationTool: React.FC = () => {
         description: `Processed ${reconciliationResults.summary.totalInternal} internal transactions. Redirecting to insights...`,
       });
       
+      // Save additional debug data to localStorage
+      localStorage.setItem('lastReconciliationResults', JSON.stringify(reconciliationResults));
+      
       // Redirect to insights page after successful reconciliation
       setTimeout(() => {
-        navigate('/insights');
+        navigate('/insights', {
+          state: {
+            reconciliationResults,
+            fromReconciliation: true
+          }
+        });
       }, 1500);
       
     } catch (error) {
@@ -493,7 +501,18 @@ const ReconciliationTool: React.FC = () => {
           {/* Recent Sessions History - Moved to bottom */}
           {historyData.length > 0 && (
             <div className="max-w-4xl mx-auto">
-              <ReconciliationHistory sessions={historyData} />
+              <ReconciliationHistory 
+                sessions={historyData} 
+                onDeleteSession={(sessionId) => {
+                  const updatedHistory = historyData.filter(session => session.id !== sessionId);
+                  setHistoryData(updatedHistory);
+                  
+                  // Update localStorage
+                  const allSessions = getReconciliationHistory();
+                  const filteredSessions = allSessions.filter(session => session.id !== sessionId);
+                  localStorage.setItem('transactron_reconciliation_history', JSON.stringify(filteredSessions));
+                }}
+              />
             </div>
           )}
         </main>

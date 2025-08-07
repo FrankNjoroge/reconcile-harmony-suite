@@ -1,9 +1,12 @@
 
-import React from 'react';
-import { Clock, FileText, CheckCircle, AlertTriangle, XCircle, ChevronRight } from 'lucide-react';
+import React, { useState } from 'react';
+import { Clock, FileText, CheckCircle, AlertTriangle, XCircle, ChevronRight, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { formatDistanceToNow } from 'date-fns';
+import DeleteSessionModal from './DeleteSessionModal';
+import { useToast } from '@/hooks/use-toast';
 
 interface HistorySession {
   id: string;
@@ -29,10 +32,22 @@ interface HistorySession {
 
 interface ReconciliationHistoryProps {
   sessions: HistorySession[];
+  onDeleteSession?: (sessionId: string) => void;
 }
 
-const ReconciliationHistory: React.FC<ReconciliationHistoryProps> = ({ sessions }) => {
+const ReconciliationHistory: React.FC<ReconciliationHistoryProps> = ({ 
+  sessions, 
+  onDeleteSession 
+}) => {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const [deleteModal, setDeleteModal] = useState<{
+    isOpen: boolean;
+    sessionToDelete: HistorySession | null;
+  }>({
+    isOpen: false,
+    sessionToDelete: null
+  });
 
   const handleSessionClick = (session: HistorySession) => {
     // Pass complete session data through navigation state
@@ -59,6 +74,30 @@ const ReconciliationHistory: React.FC<ReconciliationHistoryProps> = ({ sessions 
       event.preventDefault();
       handleSessionClick(session);
     }
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent, session: HistorySession) => {
+    e.stopPropagation(); // Prevent session click
+    setDeleteModal({
+      isOpen: true,
+      sessionToDelete: session
+    });
+  };
+
+  const confirmDelete = () => {
+    if (deleteModal.sessionToDelete && onDeleteSession) {
+      onDeleteSession(deleteModal.sessionToDelete.id);
+      setDeleteModal({ isOpen: false, sessionToDelete: null });
+      
+      toast({
+        title: "Session deleted",
+        description: "Reconciliation session has been permanently removed.",
+      });
+    }
+  };
+
+  const cancelDelete = () => {
+    setDeleteModal({ isOpen: false, sessionToDelete: null });
   };
 
   if (sessions.length === 0) {
@@ -112,10 +151,28 @@ const ReconciliationHistory: React.FC<ReconciliationHistoryProps> = ({ sessions 
                   <span className="text-red-700 font-medium">{session.summary.providerOnly}</span>
                 </div>
               )}
+              {onDeleteSession && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => handleDeleteClick(e, session)}
+                  className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-all duration-200"
+                  aria-label="Delete session"
+                >
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              )}
               <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground group-hover:translate-x-1 transition-all duration-200" />
             </div>
           </div>
         ))}
+
+        <DeleteSessionModal
+          isOpen={deleteModal.isOpen}
+          onClose={cancelDelete}
+          onConfirm={confirmDelete}
+          sessionData={deleteModal.sessionToDelete}
+        />
       </CardContent>
     </Card>
   );

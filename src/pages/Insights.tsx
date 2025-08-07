@@ -18,9 +18,17 @@ const Insights: React.FC = () => {
   useEffect(() => {
     const navigationState = location.state as any;
     
+    console.log('=== INSIGHTS PAGE DEBUG ===');
+    console.log('Navigation state:', navigationState);
+    console.log('Current results:', currentResults);
+    
     if (navigationState?.fromRecentSessions && navigationState?.reconciliationResults) {
       // Data comes from Recent Sessions navigation
-      console.log('Loading insights from Recent Sessions:', navigationState);
+      console.log('Loading insights from Recent Sessions:', navigationState.reconciliationResults);
+      setInsightsData(navigationState.reconciliationResults);
+    } else if (navigationState?.reconciliationResults) {
+      // Data comes from direct reconciliation navigation
+      console.log('Loading insights from direct reconciliation:', navigationState.reconciliationResults);
       setInsightsData(navigationState.reconciliationResults);
     } else if (currentResults) {
       // Data comes from current reconciliation context
@@ -28,8 +36,21 @@ const Insights: React.FC = () => {
       setInsightsData(currentResults);
       markResultsAsViewed();
     } else {
-      // No data available
-      setInsightsData(null);
+      // Try to load from localStorage as fallback
+      console.log('No navigation state, checking localStorage...');
+      const savedResults = localStorage.getItem('lastReconciliationResults');
+      if (savedResults) {
+        try {
+          const results = JSON.parse(savedResults);
+          console.log('Loaded from localStorage:', results);
+          setInsightsData(results);
+        } catch (e) {
+          console.error('Failed to parse saved results:', e);
+          setInsightsData(null);
+        }
+      } else {
+        setInsightsData(null);
+      }
     }
   }, [currentResults, location.state, markResultsAsViewed]);
 
