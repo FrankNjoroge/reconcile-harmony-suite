@@ -1,6 +1,6 @@
 
 import React, { useState, useCallback, useEffect } from 'react';
-import { CheckCircle, AlertTriangle, XCircle, RotateCcw, Sparkles, AlertCircleIcon } from 'lucide-react';
+import { CheckCircle, AlertTriangle, XCircle, RotateCcw, Sparkles, AlertCircleIcon, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,28 +16,46 @@ import AppSidebar from './AppSidebar';
 import ReconciliationHistory from './ReconciliationHistory';
 import { TableSkeleton, SummarySkeleton } from './LoadingSkeleton';
 import { FileUploadState, ValidationError, ReconciliationResult } from '@/types/reconciliation';
-import { parseCSV, validateFile, validateCSVStructure } from '@/utils/csvParser';
-import { ReconciliationEngine } from '@/utils/reconciliationEngine';
+import { validateFile, validateCSVStructure } from '@/utils/csvParser';
+import { useReconciliation as useReconciliationHook } from '@/hooks/useReconciliation';
 import { useReconciliation } from '@/contexts/ReconciliationContext';
 import { saveReconciliationSession, getReconciliationHistory } from '@/utils/localStorage';
+import { PerformanceMonitor, MemoryLeakDetector } from '@/utils/performanceMonitor';
+import { ProcessingProgress } from './ProcessingProgress';
 
 const ReconciliationTool: React.FC = () => {
   const [files, setFiles] = useState<FileUploadState>({ internal: null, provider: null });
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
   const [fileValidationErrors, setFileValidationErrors] = useState<string[]>([]);
-  const [isProcessing, setIsProcessing] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
-  const [results, setResults] = useState<ReconciliationResult | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [historyData, setHistoryData] = useState<any[]>([]);
   const { toast } = useToast();
   const navigate = useNavigate();
   const { setCurrentResults, addToActivityLog } = useReconciliation();
+  
+  // Use the optimized reconciliation hook with Web Workers
+  const { 
+    isProcessing, 
+    progress, 
+    result, 
+    errors, 
+    reconcileFiles, 
+    clearResults, 
+    cancelProcessing 
+  } = useReconciliationHook();
 
-  // Load history data on component mount
+  // Load history data on component mount and start performance monitoring
   useEffect(() => {
     const history = getReconciliationHistory();
     setHistoryData(history);
+    PerformanceMonitor.startMonitoring();
+    
+    // Cleanup function
+    return () => {
+      MemoryLeakDetector.cleanup();
+      PerformanceMonitor.clearMemory();
+    };
   }, []);
   
   const handleFileSelect = useCallback(async (fileType: 'internal' | 'provider', file: File) => {
@@ -128,80 +146,41 @@ const ReconciliationTool: React.FC = () => {
       return;
     }
     
-    setIsProcessing(true);
-    console.log('Starting reconciliation process...');
+    // Start performance monitoring
+    PerformanceMonitor.startMonitoring();
+    console.log('Starting optimized reconciliation process with Web Workers...');
     
     try {
-      // Parse both CSV files
-      const internalResult = await parseCSV(files.internal);
-      const providerResult = await parseCSV(files.provider);
+      // Use the optimized Web Worker-based reconciliation
+      await reconcileFiles(files.internal, files.provider);
       
-      // Check for parsing errors
-      const allErrors = [
-        ...internalResult.errors.map(e => ({ ...e, file: 'internal' as const })),
-        ...providerResult.errors.map(e => ({ ...e, file: 'provider' as const }))
-      ];
+    } catch (error) {
+      console.error('Error during reconciliation:', error);
+      toast({
+        title: "Processing failed",
+        description: "An unexpected error occurred while processing the files. Please try again.",
+        variant: "destructive"
+      });
+    }
+  }, [files, toast, reconcileFiles, fileValidationErrors]);
+
+  // Handle reconciliation completion
+  useEffect(() => {
+    if (result && !isProcessing) {
+      PerformanceMonitor.logMetrics('Complete Reconciliation Process');
       
-      if (allErrors.length > 0) {
-        setValidationErrors(allErrors);
-        const errorMessages = allErrors.map(error => error.message);
-        setFileValidationErrors(errorMessages);
-        
-        toast({
-          title: "Processing errors detected",
-          description: `Found ${allErrors.length} error(s) during file processing. Please fix these issues.`,
-          variant: "destructive"
-        });
-        setIsProcessing(false);
-        return;
-      }
-      
-      // Validate that we have actual data
-      if (internalResult.data.length === 0) {
-        setFileValidationErrors(['Internal file contains no valid transaction data. Please check your file format.']);
-        toast({
-          title: "No data found",
-          description: "Internal file contains no valid transactions.",
-          variant: "destructive"
-        });
-        setIsProcessing(false);
-        return;
-      }
-      
-      if (providerResult.data.length === 0) {
-        setFileValidationErrors(['Provider file contains no valid transaction data. Please check your file format.']);
-        toast({
-          title: "No data found",
-          description: "Provider file contains no valid transactions.",
-          variant: "destructive"
-        });
-        setIsProcessing(false);
-        return;
-      }
-      
-      console.log(`Parsed ${internalResult.data.length} internal transactions and ${providerResult.data.length} provider transactions`);
-      
-      // Perform reconciliation
-      const reconciliationResults = await ReconciliationEngine.reconcile(
-        internalResult.data,
-        providerResult.data
-      );
-      
-      console.log('Reconciliation completed:', reconciliationResults.summary);
-      
-      setResults(reconciliationResults);
-      setCurrentResults(reconciliationResults);
+      setCurrentResults(result);
       
       // Save to localStorage with complete transaction data
       saveReconciliationSession(
-        files.internal.name,
-        files.provider.name,
-        reconciliationResults.summary,
+        files.internal?.name || '',
+        files.provider?.name || '',
+        result.summary,
         {
-          matched: reconciliationResults.categories.matched,
-          internalOnly: reconciliationResults.categories.internalOnly,
-          providerOnly: reconciliationResults.categories.providerOnly,
-          mismatched: reconciliationResults.categories.mismatched
+          matched: result.categories.matched,
+          internalOnly: result.categories.internalOnly,
+          providerOnly: result.categories.providerOnly,
+          mismatched: result.categories.mismatched
         }
       );
       
@@ -210,53 +189,66 @@ const ReconciliationTool: React.FC = () => {
       setHistoryData(updatedHistory);
       
       // Add to activity log
-      addToActivityLog({
-        internalFileName: files.internal.name,
-        providerFileName: files.provider.name,
-        summary: reconciliationResults.summary
-      });
+      if (files.internal && files.provider) {
+        addToActivityLog({
+          internalFileName: files.internal.name,
+          providerFileName: files.provider.name,
+          summary: result.summary
+        });
+      }
       
       toast({
         title: "Reconciliation completed successfully",
-        description: `Processed ${reconciliationResults.summary.totalInternal} internal transactions. Redirecting to insights...`,
+        description: `Processed ${result.summary.totalInternal} internal transactions. Redirecting to insights...`,
       });
       
       // Save additional debug data to localStorage
-      localStorage.setItem('lastReconciliationResults', JSON.stringify(reconciliationResults));
+      localStorage.setItem('lastReconciliationResults', JSON.stringify(result));
       
       // Redirect to insights page after successful reconciliation
       setTimeout(() => {
         navigate('/insights', {
           state: {
-            reconciliationResults,
+            reconciliationResults: result,
             fromReconciliation: true
           }
         });
       }, 1500);
+    }
+  }, [result, isProcessing, files, setCurrentResults, addToActivityLog, navigate, toast]);
+
+  // Handle errors from Web Worker processing
+  useEffect(() => {
+    if (errors.length > 0) {
+      const errorMessages = errors.map(error => error.message);
+      setFileValidationErrors(errorMessages);
       
-    } catch (error) {
-      console.error('Error during reconciliation:', error);
-      setFileValidationErrors(['An unexpected error occurred while processing the files. Please try again.']);
       toast({
-        title: "Processing failed",
-        description: "An unexpected error occurred while processing the files. Please try again.",
+        title: "Processing errors detected",
+        description: `Found ${errors.length} error(s) during file processing.`,
         variant: "destructive"
       });
-    } finally {
-      setIsProcessing(false);
     }
-  }, [files, toast, setCurrentResults, addToActivityLog, navigate, fileValidationErrors]);
+  }, [errors, toast]);
   
   const resetTool = useCallback(() => {
+    // Cancel any ongoing processing
+    cancelProcessing();
+    
+    // Clear all state
     setFiles({ internal: null, provider: null });
     setValidationErrors([]);
     setFileValidationErrors([]);
-    setResults(null);
+    clearResults();
+    
+    // Force memory cleanup
+    PerformanceMonitor.clearMemory();
+    
     toast({
       title: "Workspace cleared",
       description: "All data has been cleared. Ready for new files.",
     });
-  }, [toast]);
+  }, [toast, cancelProcessing, clearResults]);
   
   const internalErrors = validationErrors.filter(e => e.file === 'internal');
   const providerErrors = validationErrors.filter(e => e.file === 'provider');
@@ -360,7 +352,7 @@ const ReconciliationTool: React.FC = () => {
               )}
             </Button>
             
-            {(files.internal || files.provider || results) && (
+            {(files.internal || files.provider || result) && (
               <Button
                 onClick={resetTool}
                 variant="outline"
@@ -377,12 +369,32 @@ const ReconciliationTool: React.FC = () => {
           {isProcessing && (
             <div className="space-y-6 animate-fade-in max-w-6xl mx-auto">
               <Card className="bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200">
-                <CardContent className="p-6 md:p-8 text-center">
-                  <LoadingSpinner size="lg" className="mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">Processing Reconciliation</h3>
-                  <p className="text-muted-foreground">
-                    Analyzing transactions and generating insights...
-                  </p>
+                <CardContent className="p-6 md:p-8">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center space-x-3">
+                      <LoadingSpinner size="lg" />
+                      <div>
+                        <h3 className="text-lg font-semibold">Processing Reconciliation</h3>
+                        <p className="text-muted-foreground text-sm">
+                          Using Web Workers for optimal performance
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      onClick={cancelProcessing}
+                      variant="outline"
+                      size="sm"
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    >
+                      <X className="h-4 w-4 mr-1" />
+                      Cancel
+                    </Button>
+                  </div>
+                  {progress && (
+                    <ProcessingProgress 
+                      progress={progress}
+                    />
+                  )}
                 </CardContent>
               </Card>
               <SummarySkeleton />
@@ -391,7 +403,7 @@ const ReconciliationTool: React.FC = () => {
           )}
           
           {/* Results Section - Only show if not processing and not redirecting */}
-          {results && !isProcessing && (
+          {result && !isProcessing && (
             <div className="space-y-6 animate-fade-in max-w-6xl mx-auto">
               <div className="text-center p-4 bg-green-50 border border-green-200 rounded-lg">
                 <CheckCircle className="h-8 w-8 text-green-600 mx-auto mb-2" />
@@ -400,7 +412,7 @@ const ReconciliationTool: React.FC = () => {
                 </p>
               </div>
               
-              <ReconciliationSummary results={results} />
+              <ReconciliationSummary results={result} />
               
               <Card className="shadow-xl backdrop-blur-sm bg-card/80 border-border/50">
                 <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent">
@@ -418,7 +430,7 @@ const ReconciliationTool: React.FC = () => {
                         <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
                         <span className="hidden sm:inline">Matched</span>
                         <span className="sm:hidden">M</span>
-                        <span>({results.summary.matched})</span>
+                        <span>({result.summary.matched})</span>
                       </TabsTrigger>
                       <TabsTrigger 
                         value="internalOnly" 
@@ -427,7 +439,7 @@ const ReconciliationTool: React.FC = () => {
                         <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4 text-amber-600" />
                         <span className="hidden sm:inline">Internal</span>
                         <span className="sm:hidden">I</span>
-                        <span>({results.summary.internalOnly})</span>
+                        <span>({result.summary.internalOnly})</span>
                       </TabsTrigger>
                       <TabsTrigger 
                         value="providerOnly" 
@@ -436,7 +448,7 @@ const ReconciliationTool: React.FC = () => {
                         <XCircle className="h-3 w-3 sm:h-4 sm:w-4 text-red-600" />
                         <span className="hidden sm:inline">Provider</span>
                         <span className="sm:hidden">P</span>
-                        <span>({results.summary.providerOnly})</span>
+                        <span>({result.summary.providerOnly})</span>
                       </TabsTrigger>
                       <TabsTrigger 
                         value="mismatched" 
@@ -445,16 +457,16 @@ const ReconciliationTool: React.FC = () => {
                         <RotateCcw className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600" />
                         <span className="hidden sm:inline">Mismatched</span>
                         <span className="sm:hidden">X</span>
-                        <span>({results.summary.mismatched})</span>
+                        <span>({result.summary.mismatched})</span>
                       </TabsTrigger>
                     </TabsList>
                     
                     <TabsContent value="matched" className="mt-4 md:mt-6">
                       <TransactionTable
                         title="Matched Transactions"
-                        transactions={results.categories.matched}
+                        transactions={result.categories.matched}
                         type="matched"
-                        results={results}
+                        results={result}
                         icon={<CheckCircle className="h-5 w-5 text-green-600" />}
                         colorClass="text-green-600"
                       />
@@ -463,9 +475,9 @@ const ReconciliationTool: React.FC = () => {
                     <TabsContent value="internalOnly" className="mt-4 md:mt-6">
                       <TransactionTable
                         title="Internal Only Transactions"
-                        transactions={results.categories.internalOnly}
+                        transactions={result.categories.internalOnly}
                         type="internalOnly"
-                        results={results}
+                        results={result}
                         icon={<AlertTriangle className="h-5 w-5 text-amber-600" />}
                         colorClass="text-amber-600"
                       />
@@ -474,9 +486,9 @@ const ReconciliationTool: React.FC = () => {
                     <TabsContent value="providerOnly" className="mt-4 md:mt-6">
                       <TransactionTable
                         title="Provider Only Transactions"
-                        transactions={results.categories.providerOnly}
+                        transactions={result.categories.providerOnly}
                         type="providerOnly"
-                        results={results}
+                        results={result}
                         icon={<XCircle className="h-5 w-5 text-red-600" />}
                         colorClass="text-red-600"
                       />
@@ -485,9 +497,9 @@ const ReconciliationTool: React.FC = () => {
                     <TabsContent value="mismatched" className="mt-4 md:mt-6">
                       <TransactionTable
                         title="Mismatched Transactions"
-                        transactions={results.categories.mismatched}
+                        transactions={result.categories.mismatched}
                         type="mismatched"
-                        results={results}
+                        results={result}
                         icon={<RotateCcw className="h-5 w-5 text-blue-600" />}
                         colorClass="text-blue-600"
                       />
